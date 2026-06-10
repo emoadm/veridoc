@@ -1,0 +1,72 @@
+{
+  "_comment": "Test users seeded against deploy/keycloak/veridoc-realm.json for the reference-service integration tests (plan 01-05). One user per relevant role across >=2 tenants (site-001/study-A and site-002/study-B), all MFA-enabled (the realm's browser-mfa REQUIRED OTP flow). Passwords are test-only placeholders; a live Keycloak import (Docker/CI, plan 01-06) consumes this via the partial-import API or `kc.sh import`. On Docker-less hosts the tests mint equivalent RS256 tokens directly from these role+tenant identities (see services/reference-service/tests/conftest.py). NO production secrets.",
+  "realm": "veridoc",
+  "users": [
+    {
+      "username": "coordinator-site1",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "coordinator-site1@test.veridoc.local",
+      "attributes": { "site": ["site-001"], "study": ["study-A"] },
+      "realmRoles": ["site-coordinator"],
+      "credentials": [{ "type": "password", "value": "Test-Passw0rd!", "temporary": false }],
+      "requiredActions": ["CONFIGURE_TOTP"],
+      "totp": true
+    },
+    {
+      "username": "datamanager-site1",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "datamanager-site1@test.veridoc.local",
+      "attributes": { "site": ["site-001"], "study": ["study-A"] },
+      "realmRoles": ["data-manager"],
+      "credentials": [{ "type": "password", "value": "Test-Passw0rd!", "temporary": false }],
+      "requiredActions": ["CONFIGURE_TOTP"],
+      "totp": true
+    },
+    {
+      "username": "pi-site1",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "pi-site1@test.veridoc.local",
+      "attributes": { "site": ["site-001"], "study": ["study-A"] },
+      "realmRoles": ["principal-investigator"],
+      "credentials": [{ "type": "password", "value": "Test-Passw0rd!", "temporary": false }],
+      "requiredActions": ["CONFIGURE_TOTP"],
+      "totp": true
+    },
+    {
+      "username": "regaffairs-site1",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "regaffairs-site1@test.veridoc.local",
+      "attributes": { "site": ["site-001"], "study": ["study-A"] },
+      "realmRoles": ["regulatory-affairs"],
+      "credentials": [{ "type": "password", "value": "Test-Passw0rd!", "temporary": false }],
+      "requiredActions": ["CONFIGURE_TOTP"],
+      "totp": true
+    },
+    {
+      "username": "coordinator-site2",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "coordinator-site2@test.veridoc.local",
+      "attributes": { "site": ["site-002"], "study": ["study-B"] },
+      "realmRoles": ["site-coordinator"],
+      "credentials": [{ "type": "password", "value": "Test-Passw0rd!", "temporary": false }],
+      "requiredActions": ["CONFIGURE_TOTP"],
+      "totp": true
+    },
+    {
+      "username": "datamanager-site2",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "datamanager-site2@test.veridoc.local",
+      "attributes": { "site": ["site-002"], "study": ["study-B"] },
+      "realmRoles": ["data-manager"],
+      "credentials": [{ "type": "password", "value": "Test-Passw0rd!", "temporary": false }],
+      "requiredActions": ["CONFIGURE_TOTP"],
+      "totp": true
+    }
+  ]
+}

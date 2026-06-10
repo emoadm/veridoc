@@ -16,6 +16,7 @@ token + a ciphertext digest), never plaintext PII (the audit SDK is value-agnost
 
 from __future__ import annotations
 
+import base64
 import hashlib
 from datetime import UTC, datetime
 
@@ -128,7 +129,15 @@ def create_subject(
             entity_type="subject",
             entity_id=str(subject_id),
             before=None,
-            after={"pseudonym_token": token, "pii_ciphertext_sha256": _ct_digest(ciphertext)},
+            # The audit row carries the patient's pseudonym + the envelope ciphertext payload
+            # (base64) — already-encrypted/pseudonymized values, never plaintext PII (T-02-06).
+            # After crypto-shred, this ciphertext becomes undecryptable while the row stays
+            # immutable (the Art.17 x Part 11 seam, T-05-08).
+            after={
+                "pseudonym_token": token,
+                "pii_ciphertext_sha256": _ct_digest(ciphertext),
+                "pii_ciphertext_b64": base64.b64encode(ciphertext).decode("ascii"),
+            },
             occurred_at=datetime.now(UTC),
         ),
     )

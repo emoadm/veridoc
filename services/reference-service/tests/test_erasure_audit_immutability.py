@@ -29,9 +29,7 @@ def _auth(token: str) -> dict:
 
 
 def _create(client, make_token, *, natural_id, pii):
-    token = make_token(
-        sub="coord", roles=["site-coordinator"], site="site-001", study="study-A"
-    )
+    token = make_token(sub="coord", roles=["site-coordinator"], site="site-001", study="study-A")
     resp = client.post(
         "/subjects",
         json={"natural_id": natural_id, "pii": pii},

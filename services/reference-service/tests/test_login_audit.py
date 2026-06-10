@@ -30,9 +30,7 @@ def test_successful_login_is_audited(client, migrated_engine, make_token):
     token = make_token(
         sub="user-success", roles=["site-coordinator"], site="site-001", study="study-A"
     )
-    resp = client.post(
-        "/subjects", json={"natural_id": "MRN-1", "pii": "P"}, headers=_auth(token)
-    )
+    resp = client.post("/subjects", json={"natural_id": "MRN-1", "pii": "P"}, headers=_auth(token))
     assert resp.status_code == 201, resp.text
 
     with Session(migrated_engine) as session:
@@ -50,9 +48,7 @@ def test_failed_login_is_audited(client, migrated_engine, make_token):
         study="study-A",
         mfa=False,
     )
-    resp = client.post(
-        "/subjects", json={"natural_id": "MRN-2", "pii": "P"}, headers=_auth(token)
-    )
+    resp = client.post("/subjects", json={"natural_id": "MRN-2", "pii": "P"}, headers=_auth(token))
     assert resp.status_code == 401
 
     with Session(migrated_engine) as session:

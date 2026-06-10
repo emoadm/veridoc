@@ -18,9 +18,7 @@ def _auth(token: str) -> dict:
 
 def test_pii_is_ciphertext_at_rest_and_round_trips(client, migrated_engine, make_token):
     plaintext = "Jane Q. Patient, DOB 1980-01-01"
-    token = make_token(
-        sub="coord", roles=["site-coordinator"], site="site-001", study="study-A"
-    )
+    token = make_token(sub="coord", roles=["site-coordinator"], site="site-001", study="study-A")
     resp = client.post(
         "/subjects",
         json={"natural_id": "MRN-ENC", "pii": plaintext},

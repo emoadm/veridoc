@@ -24,6 +24,7 @@ from veridoc_auth import AuthError, ForbiddenError, JWKSCache, Principal, verify
 from veridoc_tenancy import TenancyError, reset_tenant, set_tenant, tenant_from_claims
 
 from .api import subjects
+from .api.auth_audit import audit_login_failure, audit_login_success
 from .config import Settings, get_settings
 from .db import make_engine, make_session_factory
 
@@ -49,10 +50,28 @@ def _make_principal_dependency(
         # Async generator dependency: setup + teardown run in the SAME asyncio context, so
         # the tenancy contextvar token stays valid (a sync dependency would set/reset across
         # different threadpool contexts and raise on reset).
-        token = _bearer_token(request)
-        principal = verify_token(token, jwks=jwks, issuer=issuer, audience=audience)
-        # Fail-closed tenancy: raises TenancyError if site/study are unresolvable.
-        tenant = tenant_from_claims(principal.tenant_claims)
+        factory = request.app.state.session_factory
+        try:
+            token = _bearer_token(request)
+        except AuthError as exc:
+            # No bearer header at all — record the failed attempt and reject.
+            audit_login_failure(factory, token="", reason=str(exc))
+            raise
+        try:
+            principal = verify_token(token, jwks=jwks, issuer=issuer, audience=audience)
+            # Fail-closed tenancy: raises TenancyError if site/study are unresolvable.
+            tenant = tenant_from_claims(principal.tenant_claims)
+        except (AuthError, TenancyError) as exc:
+            # Every REJECTED login attempt is audited (success+failure both logged, T-05-05).
+            audit_login_failure(factory, token=token, reason=str(exc))
+            raise
+        # Every SUCCESSFUL authentication is audited before the business handler runs.
+        audit_login_success(
+            factory,
+            subject=principal.subject,
+            tenant_id=f"{tenant.site}/{tenant.study}",
+            role=principal.roles[0] if principal.roles else "unknown",
+        )
         token_obj = set_tenant(tenant)
         # Expose the verified principal to the route's RBAC dependency.
         request.state.principal = principal

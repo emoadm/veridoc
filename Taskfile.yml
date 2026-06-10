@@ -2,11 +2,16 @@
 # uv (Python) and pnpm (JS/TS) workspaces together. NOT Nx/Turborepo.
 #
 # Targets every Phase-1 plan relies on:
-#   task install    — uv sync + pnpm install
-#   task lint       — ruff check + ruff format --check + pnpm -r lint
-#   task test:unit  — uv run pytest + pnpm -r vitest run  (Wave 0 fast harness)
-#   task test       — test:unit + (integration targets later plans extend)
-#   task build      — uv build + pnpm -r build
+#   task install          — uv sync + pnpm install
+#   task lint             — ruff check + ruff format --check + pnpm -r lint
+#   task test:unit        — uv run pytest + pnpm -r vitest run  (Wave 0 fast harness)
+#   task test:integration — DB-backed pytest (needs Postgres; see VERIDOC_TEST_DATABASE_URL)
+#   task test             — test:unit + test:integration
+#   task build            — uv build + pnpm -r build
+#
+# The veridoc-audit DB-backed tests (tamper-detection, same-txn) resolve a Postgres via
+# VERIDOC_TEST_DATABASE_URL, else an ephemeral testcontainers Postgres (needs Docker), else
+# they SKIP — so `task test:unit` stays green from a clean clone with no DB/Docker present.
 version: "3"
 
 silent: true
@@ -31,10 +36,19 @@ tasks:
       - uv run pytest
       - pnpm -r --if-present vitest run
 
+  "test:integration":
+    desc: >-
+      DB-backed integration tests (veridoc-audit tamper-detection + same-txn). Provide a
+      Postgres via VERIDOC_TEST_DATABASE_URL (e.g. postgresql://user:pass@host:5432/db) or
+      have Docker available for testcontainers; otherwise the DB tests skip.
+    cmds:
+      - uv run pytest libs/veridoc-audit/tests/test_tamper_detection.py libs/veridoc-audit/tests/test_same_txn.py
+
   test:
-    desc: Full test suite. Wave 0 = test:unit; later plans extend with integration targets.
+    desc: Full test suite — fast unit tests + DB-backed integration tests.
     cmds:
       - task: "test:unit"
+      - task: "test:integration"
 
   build:
     desc: Build all workspace artifacts (uv build + pnpm -r build).

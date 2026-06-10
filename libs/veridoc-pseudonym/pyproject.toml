@@ -4,8 +4,12 @@ version = "0.0.0"
 description = "VeriDoc deterministic per-patient pseudonym tokens + crypto-shredding erasure (D-12)."
 readme = "README.md"
 requires-python = ">=3.12"
-# Shares the per-patient key hierarchy with veridoc-crypto; wired in plan 01-03.
-dependencies = []
+# Shares the per-patient key hierarchy with veridoc-crypto (plan 01-03): the deterministic
+# pseudonym token = HMAC(derive_patient_key(master, patient_id), natural_id), so pseudonym
+# and encryption derive from ONE per-patient key (Pitfall 3 — no separate global key).
+dependencies = [
+    "veridoc-crypto",
+]
 
 [build-system]
 requires = ["hatchling"]

@@ -793,6 +793,12 @@ requires-dist = [{ name = "tink", specifier = ">=1.10" }]
 name = "veridoc-pseudonym"
 version = "0.0.0"
 source = { editable = "libs/veridoc-pseudonym" }
+dependencies = [
+    { name = "veridoc-crypto" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "veridoc-crypto", editable = "libs/veridoc-crypto" }]
 
 [[package]]
 name = "veridoc-tenancy"

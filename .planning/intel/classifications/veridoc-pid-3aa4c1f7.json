@@ -1,0 +1,30 @@
+{
+  "source_path": "/home/emoadm/projects/veridoc/docs/prd/veridoc-pid.md",
+  "type": "PRD",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "VeriDoc AI — Project Initiation Document",
+  "summary": "Project Initiation Document for VeriDoc AI, an AI-powered Source Data Verification platform for clinical trials, covering scope, functional requirements, architecture, and regulatory strategy.",
+  "scope": [
+    "Source Data Verification (SDV) engine",
+    "ALCOA+ compliance verification",
+    "Laboratory data management",
+    "Adverse Event / SAE verification",
+    "Concomitant Medication verification",
+    "Cross-domain consistency checks",
+    "Query management",
+    "Multi-agent AI architecture (Orchestrator + 10 specialized agents)",
+    "EMR integration (FHIR R4, HL7 v2)",
+    "Medidata Rave eCRF integration",
+    "eTMF integration",
+    "Security and compliance architecture",
+    "Computer System Validation (GAMP 5)",
+    "Regulatory frameworks (21 CFR Part 11, EMA Annex 11, ICH E6(R3), GDPR, HIPAA)",
+    "Implementation roadmap",
+    "Commercial and go-to-market strategy"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null,
+  "notes": "Manifest declared PRD; treated as authoritative. Document is a hybrid Project Initiation Document containing PRD-level scope/requirements (sections 1-2), SPEC-level technical architecture (section 3), and several effectively-locked technical/regulatory decisions (FHIR R4 normalization, Medidata Rave as primary eCRF, mandatory human-in-the-loop, GAMP 5 CSV, regional data-residency). Synthesizer should be aware that ADR-grade locked decisions are embedded here despite the PRD classification."
+}

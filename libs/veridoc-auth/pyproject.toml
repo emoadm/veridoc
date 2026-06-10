@@ -4,8 +4,15 @@ version = "0.0.0"
 description = "VeriDoc OIDC JWT verification + 8-role RBAC + IP-allowlist middleware against Keycloak JWKS (D-01/D-02)."
 readme = "README.md"
 requires-python = ">=3.12"
-# Real dependencies (pyjwt, jwcrypto, OIDC glue) added in plan 01-04.
-dependencies = []
+# Plan 01-04: Keycloak JWTs verified directly (no OIDC-glue package adopted; see
+# docs/validation/PACKAGE-LEGITIMACY.md plan 01-04 resolution note). All APPROVED.
+#   pyjwt[crypto] — JWT decode + RS256 signature verification (pulls cryptography)
+#   jwcrypto      — JWK/JWKS parsing (Keycloak JWKS -> per-kid public keys)
+# `cryptography` (PyCA) is the authentic, required transitive dep for RS256.
+dependencies = [
+    "pyjwt[crypto]>=2.8",
+    "jwcrypto>=1.5",
+]
 
 [build-system]
 requires = ["hatchling"]

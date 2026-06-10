@@ -43,8 +43,9 @@ packages to reject / substitute.
 | sqlalchemy | PyPI | 2.x | latest 2.x (lockfile-pinned) | APPROVED | ORM / DB access to Postgres (typed 2.x API). |
 | alembic | PyPI | latest stable | latest stable (lockfile-pinned) | APPROVED | DB migrations (audit/identity/tenancy schema). |
 | psycopg | PyPI | v3 (`psycopg[binary]`) | latest v3 (lockfile-pinned) | APPROVED | Modern Postgres driver (sync + async). |
-| pyjwt | PyPI | latest stable | latest stable (lockfile-pinned) | APPROVED | JWT signature verification against Keycloak JWKS. |
+| pyjwt | PyPI | latest stable | latest stable (lockfile-pinned) | APPROVED | JWT signature verification against Keycloak JWKS. Installed as `pyjwt[crypto]` (RS256 needs `cryptography`). |
 | jwcrypto | PyPI | latest stable | 1.5.7 (registry-confirmed) | APPROVED | JWK/JWKS handling. Authentic: `github.com/latchset/jwcrypto` (Red Hat). |
+| cryptography | PyPI | latest stable | latest stable (lockfile-pinned) | APPROVED | **Required transitive dependency** of the APPROVED `pyjwt[crypto]` and `jwcrypto` — provides RSA primitives for RS256 JWKS signature verification. Authentic: **PyCA** (Python Cryptographic Authority), `github.com/pyca/cryptography`, the de-facto Python crypto library. Added at plan 01-04 (auth) per the decision-context directive: a needed package not yet in the table is recorded with a verified verdict before install. |
 | aws-encryption-sdk | PyPI | 4.x (keyrings/MPL) | latest 4.x (lockfile-pinned) | APPROVED | Envelope-encryption abstraction (D-11). AWS-official `aws/aws-encryption-sdk-python`. Adjudicate vs Tink in plan 01-03. |
 | tink | PyPI | latest stable | latest stable (lockfile-pinned) | APPROVED | **Alternative** to aws-encryption-sdk for D-11 (Google-official). Only one of {aws-encryption-sdk, tink} is installed; choice locked in plan 01-03. |
 | rfc8785 | PyPI | latest stable | 0.1.4 (registry-confirmed) | APPROVED (authentic) | RFC 8785 JCS canonicalizer for the audit hash payload. **Adjudicated authentic — approved:** published by **Trail of Bits**, `github.com/trailofbits/rfc8785.py`, Apache-2.0, "pure-Python, no-dependency RFC 8785 JCS." In-house fallback NOT needed. |
@@ -56,6 +57,13 @@ packages to reject / substitute.
 > **Deferred to later plans, NOT installed in this scaffold plan (listed for review continuity):**
 > `fastapi-keycloak-middleware` / `authlib` (OIDC glue — plan 01-04, verify maintenance
 > activity before adopting). Add their verified versions + verdicts when those plans run.
+>
+> **Plan 01-04 OIDC-glue resolution (2026-06-11):** No new OIDC-middleware package was
+> adopted. `veridoc-auth` verifies Keycloak JWTs directly with the already-APPROVED
+> `pyjwt[crypto]` + `jwcrypto` (per the decision-context preference for pyjwt+jwcrypto over
+> an unlisted OIDC-glue package). `fastapi-keycloak-middleware` and `authlib` remain
+> **NOT installed**. The only newly-installed package is `cryptography` (row added above) —
+> the authentic PyCA transitive dependency that `pyjwt[crypto]`/`jwcrypto` require for RS256.
 
 ## JavaScript / TypeScript packages (registry: npm)
 

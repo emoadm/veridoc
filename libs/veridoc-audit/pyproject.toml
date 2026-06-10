@@ -4,8 +4,19 @@ version = "0.0.0"
 description = "VeriDoc shared audit SDK: RFC 8785 JCS canonicalization + per-record SHA-256 hash chain + same-transaction writer (D-04/D-05/D-06)."
 readme = "README.md"
 requires-python = ">=3.12"
-# Real dependencies (rfc8785, sqlalchemy) are added in plan 01-02 when the SDK is implemented.
-dependencies = []
+# Runtime deps (plan 01-02). All APPROVED in docs/validation/PACKAGE-LEGITIMACY.md.
+#   rfc8785      — RFC 8785 JCS canonicalizer (authentic, Trail of Bits) — feeds the audit hash.
+#   sqlalchemy   — 2.x typed Core/ORM; same-transaction writer joins the caller's Session.
+#   psycopg      — v3 Postgres driver (binary) for SQLAlchemy.
+#   alembic      — append-only audit_log migration (0001) incl. immutability trigger.
+#   pydantic     — v2 AuditEvent model carrying the D-06 fields.
+dependencies = [
+    "rfc8785>=0.1.4",
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.1",
+    "alembic>=1.13",
+    "pydantic>=2.0",
+]
 
 [build-system]
 requires = ["hatchling"]

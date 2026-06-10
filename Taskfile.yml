@@ -1,0 +1,43 @@
+# VeriDoc cross-language task runner (go-task) — the D-08 glue layer tying the
+# uv (Python) and pnpm (JS/TS) workspaces together. NOT Nx/Turborepo.
+#
+# Targets every Phase-1 plan relies on:
+#   task install    — uv sync + pnpm install
+#   task lint       — ruff check + ruff format --check + pnpm -r lint
+#   task test:unit  — uv run pytest + pnpm -r vitest run  (Wave 0 fast harness)
+#   task test       — test:unit + (integration targets later plans extend)
+#   task build      — uv build + pnpm -r build
+version: "3"
+
+silent: true
+
+tasks:
+  install:
+    desc: Install all workspace dependencies (uv sync + pnpm install).
+    cmds:
+      - uv sync --all-packages
+      - pnpm install
+
+  lint:
+    desc: Lint Python (ruff) + JS/TS (pnpm -r lint). Exits 0 on the empty skeleton.
+    cmds:
+      - uv run ruff check .
+      - uv run ruff format --check .
+      - pnpm -r --if-present lint
+
+  "test:unit":
+    desc: Fast unit tests — pytest + vitest. No cluster/containers required.
+    cmds:
+      - uv run pytest
+      - pnpm -r --if-present vitest run
+
+  test:
+    desc: Full test suite. Wave 0 = test:unit; later plans extend with integration targets.
+    cmds:
+      - task: "test:unit"
+
+  build:
+    desc: Build all workspace artifacts (uv build + pnpm -r build).
+    cmds:
+      - uv build --all-packages
+      - pnpm -r --if-present build

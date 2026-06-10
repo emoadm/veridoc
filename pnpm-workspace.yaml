@@ -1,0 +1,4 @@
+# pnpm workspace root (D-08): JS/TS half of the per-language monorepo.
+# apps/web (the React/TS scaffold) is created in plan 01-01 Task 3.
+packages:
+  - "apps/*"

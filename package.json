@@ -1,0 +1,17 @@
+{
+  "name": "veridoc",
+  "version": "0.0.0",
+  "private": true,
+  "description": "VeriDoc AI — pnpm workspace root (JS/TS half of the monorepo, D-08).",
+  "type": "module",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "lint": "pnpm -r --if-present lint",
+    "test": "pnpm -r --if-present test",
+    "build": "pnpm -r --if-present build"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

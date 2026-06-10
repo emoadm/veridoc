@@ -1,0 +1,46 @@
+[project]
+name = "veridoc"
+version = "0.0.0"
+description = "VeriDoc AI — monorepo workspace root (uv). AI-powered SDV platform for clinical trials."
+readme = "README.md"
+requires-python = ">=3.12"
+# The root is a non-package workspace coordinator; member packages live under libs/* and services/*.
+dependencies = []
+
+[tool.uv]
+package = false
+
+# uv workspace root (D-08): per-language, lightweight monorepo tooling — NOT Nx/Turborepo.
+# Every shared platform lib (D-07) and the reference service resolve as workspace members.
+[tool.uv.workspace]
+members = ["libs/*", "services/*"]
+
+# Source the five shared libs from within the workspace so the reference service depends on
+# the local source rather than a published distribution.
+[tool.uv.sources]
+veridoc-audit = { workspace = true }
+veridoc-crypto = { workspace = true }
+veridoc-pseudonym = { workspace = true }
+veridoc-auth = { workspace = true }
+veridoc-tenancy = { workspace = true }
+
+# Dev dependency group (D-08): pytest (Wave 0 test harness) + ruff (lint/format).
+# Only packages marked APPROVED in docs/validation/PACKAGE-LEGITIMACY.md.
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+# Wave 0 pytest config (Task 3 extends addopts/testpaths; declared here so the root owns config).
+[tool.pytest.ini_options]
+testpaths = ["libs", "services"]
+addopts = "-x -q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [".venv", "node_modules", "dist", "__pycache__"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

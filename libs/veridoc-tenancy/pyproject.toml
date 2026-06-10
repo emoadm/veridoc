@@ -1,0 +1,15 @@
+[project]
+name = "veridoc-tenancy"
+version = "0.0.0"
+description = "VeriDoc request-scoped site/study tenancy context middleware, fail-closed (D-03)."
+readme = "README.md"
+requires-python = ">=3.12"
+# Real dependencies added in plan 01-04.
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/veridoc_tenancy"]

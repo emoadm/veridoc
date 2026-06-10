@@ -1,0 +1,15 @@
+[project]
+name = "veridoc-crypto"
+version = "0.0.0"
+description = "VeriDoc envelope-encryption helper behind a portable KMS/HSM abstraction (D-11). Per-patient HKDF-derived key hierarchy."
+readme = "README.md"
+requires-python = ">=3.12"
+# Real dependencies (aws-encryption-sdk OR tink — adjudicated in plan 01-03) added there.
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/veridoc_crypto"]

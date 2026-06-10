@@ -38,11 +38,14 @@ tasks:
 
   "test:integration":
     desc: >-
-      DB-backed integration tests (veridoc-audit tamper-detection + same-txn). Provide a
-      Postgres via VERIDOC_TEST_DATABASE_URL (e.g. postgresql://user:pass@host:5432/db) or
-      have Docker available for testcontainers; otherwise the DB tests skip.
+      DB-backed integration tests: veridoc-audit (tamper-detection + same-txn) AND the
+      reference-service end-to-end suite (D-07 walking skeleton — RBAC, login audit,
+      field-encryption-at-rest, erasure x audit-immutability). Provide a Postgres via
+      VERIDOC_TEST_DATABASE_URL (e.g. postgresql://user:pass@host:5432/db) or have Docker
+      available for testcontainers; otherwise the DB tests skip.
     cmds:
       - uv run pytest libs/veridoc-audit/tests/test_tamper_detection.py libs/veridoc-audit/tests/test_same_txn.py
+      - uv run pytest services/reference-service/tests/
 
   test:
     desc: Full test suite — fast unit tests + DB-backed integration tests.

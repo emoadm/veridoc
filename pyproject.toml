@@ -42,7 +42,10 @@ dev = [
 # Wave 0 pytest config (Task 3 extends addopts/testpaths; declared here so the root owns config).
 [tool.pytest.ini_options]
 testpaths = ["libs", "services"]
-addopts = "-x -q"
+# importlib import mode lets distinct packages share a test-module basename (e.g.
+# test_rbac.py / test_field_encryption.py exist in both a lib and the reference service)
+# without rootdir-relative name collisions — no __init__.py needed in tests/ dirs.
+addopts = "-x -q --import-mode=importlib"
 
 [tool.ruff]
 line-length = 100

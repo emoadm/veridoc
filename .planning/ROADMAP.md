@@ -38,7 +38,13 @@ tamper-evident, 21 CFR Part 11-ready audit trail, and identity/roles exist for t
   2. Every recorded system action produces an append-only, hash-chained audit record capturing identity, role, timestamp, and before/after values — and tampering with a prior record is detectable.
   3. A user can authenticate with one of the 8 defined roles, behind MFA, and only sees access permitted by that role.
   4. Patient-identifiable data is pseudonymized and field-level encrypted at rest; cloud-provider choice remains abstracted (DEC-cloud-provider open).
-**Plans**: TBD
+**Plans**: 6 plans in 4 waves
+- [ ] 01-01-PLAN.md — Monorepo scaffold (uv+pnpm), Taskfile, pytest+Vitest Wave 0 harness, package-legitimacy gate
+- [ ] 01-02-PLAN.md — veridoc-audit SDK: JCS canonicalization + same-transaction hash chain + tamper detection
+- [ ] 01-03-PLAN.md — veridoc-crypto + veridoc-pseudonym: per-patient key hierarchy, envelope encryption, crypto-shred
+- [ ] 01-04-PLAN.md — veridoc-auth + veridoc-tenancy: Keycloak realm-as-code, OIDC/MFA/8-role RBAC, fail-closed tenancy
+- [ ] 01-05-PLAN.md — Reference service wired end-to-end (D-07 walking skeleton) + Dockerfile + integration tests
+- [ ] 01-06-PLAN.md — Provider-portable Helm + Terraform + GitHub Actions CI deploying to ephemeral kind cluster
 
 ### Phase 2: FHIR R4 Model & EMR Ingestion
 **Goal**: Heterogeneous EMR inputs are normalized into one canonical FHIR R4 patient
@@ -131,7 +137,7 @@ trail out — verifiable end-to-end.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Platform Skeleton & Audit Foundation | 0/0 | Not started | - |
+| 1. Platform Skeleton & Audit Foundation | 0/6 | Planned | - |
 | 2. FHIR R4 Model & EMR Ingestion | 0/0 | Not started | - |
 | 3. Medidata Rave Mock Integration | 0/0 | Not started | - |
 | 4. Multi-Agent Framework & Orchestrator | 0/0 | Not started | - |

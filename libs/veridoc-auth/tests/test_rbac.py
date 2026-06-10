@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from veridoc_auth import (
     AuthError,
     ForbiddenError,

@@ -12,10 +12,9 @@ from __future__ import annotations
 import asyncio
 
 import pytest
-
 from veridoc_tenancy import (
-    Tenant,
     TenancyError,
+    Tenant,
     current_tenant,
     set_tenant,
     tenant_from_claims,

@@ -15,7 +15,6 @@ import time
 import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
-
 from veridoc_auth import (
     AuthError,
     JWKSCache,
@@ -109,18 +108,14 @@ def test_expired_token_is_rejected(keypair, jwks):
 
 def test_token_without_mfa_acr_is_rejected(keypair, jwks):
     # No acr=mfa and no otp in amr => MFA bypass attempt.
-    token = _make_token(
-        keypair, claims_override={"acr": "password", "amr": ["pwd"]}
-    )
+    token = _make_token(keypair, claims_override={"acr": "password", "amr": ["pwd"]})
     with pytest.raises(AuthError):
         verify_token(token, jwks=jwks, issuer=ISSUER, audience=AUDIENCE)
 
 
 def test_mfa_via_amr_otp_is_accepted(keypair, jwks):
     # acr absent but amr contains otp => MFA was performed; accept.
-    token = _make_token(
-        keypair, claims_override={"acr": None, "amr": ["pwd", "otp"]}
-    )
+    token = _make_token(keypair, claims_override={"acr": None, "amr": ["pwd", "otp"]})
     principal = verify_token(token, jwks=jwks, issuer=ISSUER, audience=AUDIENCE)
     assert "otp" in principal.amr
 

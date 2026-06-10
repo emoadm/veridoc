@@ -16,9 +16,7 @@ import pytest
 
 # deploy/keycloak/veridoc-realm.json lives at the repo root, four parents up from this file:
 #   libs/veridoc-auth/tests/test_realm_config.py -> repo root
-_REALM_PATH = (
-    Path(__file__).resolve().parents[3] / "deploy" / "keycloak" / "veridoc-realm.json"
-)
+_REALM_PATH = Path(__file__).resolve().parents[3] / "deploy" / "keycloak" / "veridoc-realm.json"
 
 # The 8 PLAT-03 / D-02 roles in their kebab-case realm-role form.
 _REQUIRED_ROLES = {
@@ -58,9 +56,7 @@ def test_realm_has_oidc_confidential_client_with_audience_mapper(realm: dict) ->
     assert client.get("publicClient") is False
     # An audience protocol mapper so the access token's `aud` matches the client.
     mappers = client.get("protocolMappers", [])
-    has_audience = any(
-        m.get("protocolMapper") == "oidc-audience-mapper" for m in mappers
-    )
+    has_audience = any(m.get("protocolMapper") == "oidc-audience-mapper" for m in mappers)
     assert has_audience, "reference-service client lacks an oidc-audience-mapper"
 
 

@@ -1,0 +1,107 @@
+{{- if .Values.keycloak.enabled }}
+{{- $component := "keycloak" }}
+{{- $name := include "veridoc.componentName" (dict "component" $component) }}
+{{/*
+Keycloak (D-01) — Quarkus distro 26.6.x, realm imported on startup (Pitfall 4: realm
+config is code, never UI-only). The realm JSON (deploy/keycloak/veridoc-realm.json) is
+mounted from a ConfigMap and imported with `--import-realm`. The ${REFERENCE_SERVICE_CLIENT_SECRET}
+placeholder in the realm is resolved from the named Keycloak Secret at startup
+(Keycloak substitutes ${ENV_VAR} during import). NO secret values in the chart (T-06-01).
+
+The ConfigMap is populated at deploy time (CI: `kubectl create configmap veridoc-realm
+--from-file=deploy/keycloak/veridoc-realm.json`), keeping the chart decoupled from the
+realm bytes while still version-controlling the realm in git.
+*/}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "veridoc.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+spec:
+  replicas: {{ .Values.keycloak.replicas }}
+  selector:
+    matchLabels:
+      {{- include "veridoc.selectorLabels" (dict "component" $name "root" .) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "veridoc.labels" . | nindent 8 }}
+        {{- include "veridoc.selectorLabels" (dict "component" $name "root" .) | nindent 8 }}
+        app.kubernetes.io/component: {{ $component }}
+    spec:
+      containers:
+        - name: keycloak
+          image: "{{ .Values.keycloak.image.repository }}:{{ .Values.keycloak.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          # start-dev --import-realm imports the mounted veridoc realm (Pitfall 4 closed).
+          args:
+            - {{ .Values.keycloak.startCommand | quote }}
+            {{- if .Values.keycloak.importRealm }}
+            - "--import-realm"
+            {{- end }}
+          env:
+            # Bootstrap admin + the realm client secret — all from the named Secret (T-06-01).
+            - name: KC_BOOTSTRAP_ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.keycloak.name }}
+                  key: {{ .Values.secrets.keycloak.adminUserKey }}
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.keycloak.name }}
+                  key: {{ .Values.secrets.keycloak.adminPasswordKey }}
+            # Resolves the ${REFERENCE_SERVICE_CLIENT_SECRET} placeholder in the realm import.
+            - name: REFERENCE_SERVICE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.keycloak.name }}
+                  key: {{ .Values.secrets.keycloak.clientSecretKey }}
+            - name: KC_HEALTH_ENABLED
+              value: "true"
+          ports:
+            - name: http
+              containerPort: {{ .Values.keycloak.port }}
+          readinessProbe:
+            httpGet:
+              path: /realms/{{ .Values.keycloak.realm }}
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /realms/master
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 15
+          resources:
+            {{- toYaml .Values.keycloak.resources | nindent 12 }}
+          volumeMounts:
+            - name: realm-import
+              mountPath: /opt/keycloak/data/import
+              readOnly: true
+      volumes:
+        - name: realm-import
+          configMap:
+            # Populated from deploy/keycloak/veridoc-realm.json at deploy time.
+            name: {{ $name }}-realm
+            optional: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "veridoc.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+spec:
+  selector:
+    {{- include "veridoc.selectorLabels" (dict "component" $name "root" .) | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.keycloak.port }}
+      targetPort: http
+{{- end }}

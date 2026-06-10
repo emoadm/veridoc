@@ -1,0 +1,31 @@
+# Regional residency overlay — EMEA / EU-West (DEC-regional-data-residency, DESIGN-ONLY).
+#
+# This file is the *proof* that the architecture supports regional isolation as a values
+# overlay, NOT a multi-region rollout (which is deferred). Applied with:
+#
+#     helm install veridoc deploy/helm/veridoc \
+#       -f deploy/helm/veridoc/values.yaml \
+#       -f deploy/helm/veridoc/values-region-eu.yaml
+#
+# It changes ONLY the residency tag (and could pin region-local image registries /
+# node selectors when a managed cluster lands). No provider-specific resource is
+# introduced (DEC-cloud-provider OPEN — the chart stays AWS/Azure-portable).
+
+global:
+  # EMEA residency per DEC-regional-data-residency (PRD: Azure West Europe).
+  # GDPR/data-residency by design; the multi-region rollout itself is out of scope.
+  region: "eu-west"
+  labels:
+    veridoc.ai/residency: "emea"
+    veridoc.ai/gdpr-region: "eu-west"
+
+# A real EU deployment would additionally constrain scheduling to EU nodes and pin
+# EU-local registries; left as commented design intent so the overlay introduces no
+# cloud-specific coupling this milestone.
+#
+# postgres:
+#   nodeSelector:
+#     topology.kubernetes.io/region: westeurope
+# keycloak:
+#   nodeSelector:
+#     topology.kubernetes.io/region: westeurope

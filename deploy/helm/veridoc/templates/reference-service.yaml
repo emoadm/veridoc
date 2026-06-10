@@ -1,0 +1,107 @@
+{{- if .Values.referenceService.enabled }}
+{{- $component := "reference-service" }}
+{{- $name := include "veridoc.componentName" (dict "component" $component) }}
+{{/*
+Reference service (D-07 walking skeleton) — the FastAPI app built from
+services/reference-service/Dockerfile. Non-secret config (issuer/JWKS/audience/redis) is
+set via env from values; SECRETS (DB creds, client secret, master key) arrive via
+envFrom secretRef — NO secret values in the chart (T-06-01). Readiness + liveness probe
+GET /healthz (plan 01-05 open liveness route) — the kubectl-wait target in CI.
+*/}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "veridoc.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+spec:
+  replicas: {{ .Values.referenceService.replicas }}
+  selector:
+    matchLabels:
+      {{- include "veridoc.selectorLabels" (dict "component" $name "root" .) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "veridoc.labels" . | nindent 8 }}
+        {{- include "veridoc.selectorLabels" (dict "component" $name "root" .) | nindent 8 }}
+        app.kubernetes.io/component: {{ $component }}
+    spec:
+      containers:
+        - name: reference-service
+          image: "{{ .Values.referenceService.image.repository }}:{{ .Values.referenceService.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.referenceService.port }}
+          env:
+            # Non-secret runtime config (12-factor; matches reference_service.config.Settings).
+            - name: VERIDOC_KEYCLOAK_ISSUER
+              value: {{ .Values.referenceService.config.keycloakIssuer | quote }}
+            - name: VERIDOC_KEYCLOAK_JWKS_URI
+              value: {{ .Values.referenceService.config.keycloakJwksUri | quote }}
+            - name: VERIDOC_KEYCLOAK_AUDIENCE
+              value: {{ .Values.referenceService.config.keycloakAudience | quote }}
+            - name: VERIDOC_REDIS_URL
+              value: {{ .Values.referenceService.config.redisUrl | quote }}
+            # DATABASE_URL is assembled from the Postgres Secret (creds never inlined).
+            - name: VERIDOC_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.postgres.name }}
+                  key: {{ .Values.secrets.postgres.usernameKey }}
+            - name: VERIDOC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.postgres.name }}
+                  key: {{ .Values.secrets.postgres.passwordKey }}
+            - name: VERIDOC_DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.postgres.name }}
+                  key: {{ .Values.secrets.postgres.databaseKey }}
+            - name: VERIDOC_DATABASE_URL
+              value: "postgresql+psycopg://$(VERIDOC_DB_USER):$(VERIDOC_DB_PASSWORD)@veridoc-postgres:{{ .Values.postgres.port }}/$(VERIDOC_DB_NAME)"
+            # Per-patient master key (veridoc-crypto) from the KMS Secret.
+            - name: VERIDOC_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.kms.name }}
+                  key: {{ .Values.secrets.kms.masterKeyKey }}
+            # OIDC confidential-client secret (matches the realm placeholder).
+            - name: VERIDOC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.keycloak.name }}
+                  key: {{ .Values.secrets.keycloak.clientSecretKey }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.referenceService.healthPath }}
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.referenceService.healthPath }}
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.referenceService.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "veridoc.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+spec:
+  selector:
+    {{- include "veridoc.selectorLabels" (dict "component" $name "root" .) | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.referenceService.port }}
+      targetPort: http
+{{- end }}

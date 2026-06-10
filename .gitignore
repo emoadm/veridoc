@@ -25,6 +25,15 @@ coverage/
 *.pem
 *.key
 
+# Terraform — never commit local state, plugins, or crash logs (plan 01-06 IaC)
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+!*.tfvars.example
+
 # Editor / OS
 .DS_Store
 .idea/

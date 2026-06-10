@@ -1,0 +1,29 @@
+apiVersion: v2
+name: veridoc
+description: >-
+  VeriDoc AI platform skeleton (Phase 1) — a provider-portable Helm chart that
+  deploys Keycloak (realm-imported), Postgres, Redis, and the FastAPI reference
+  service into ONE Kubernetes cluster (D-09, D-10). No cloud-provider-specific
+  resources: the same chart runs on a local kind cluster (CI / dev) and, once
+  DEC-cloud-provider is decided, on a managed cluster. Secrets are referenced by
+  name only — never embedded in values (T-06-01).
+type: application
+
+# Chart version (the chart's own SemVer) — bump on chart changes.
+version: 0.1.0
+
+# The application version this chart deploys. Keycloak is the only externally
+# pinned image; the reference service image tag is supplied via values at deploy.
+appVersion: "1.0.0-phase1"
+
+keywords:
+  - clinical-trials
+  - sdv
+  - audit-trail
+  - keycloak
+  - 21-cfr-part-11
+
+annotations:
+  veridoc.ai/phase: "01-platform-skeleton-audit-foundation"
+  veridoc.ai/provider-portable: "true"
+  veridoc.ai/datastores: "postgres,redis"

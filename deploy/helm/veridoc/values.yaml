@@ -1,0 +1,145 @@
+# VeriDoc platform Helm values (provider-portable — D-09).
+#
+# NO PLAINTEXT SECRETS HERE (T-06-01). Every credential is delivered as a Kubernetes
+# Secret referenced BY NAME (see `secrets:` below + templates/secrets.yaml +
+# docs/validation/SECRETS-CONTRACT.md). Image tags, replica counts, resource limits,
+# and the regional-residency `region` value are the only deploy-time knobs.
+#
+# Residency (DEC-regional-data-residency, design-only): `region` is stamped as a label
+# on every workload and is overridable via values-region-eu.yaml. It proves the
+# architecture supports regional isolation WITHOUT a multi-region rollout this milestone.
+
+# Global / shared settings.
+global:
+  # Regional data-residency tag (design-only overlay; DEC-regional-data-residency).
+  # Overridden by values-region-eu.yaml (-> "eu-west").
+  region: "us-east"
+  # Image pull policy; IfNotPresent so `kind load docker-image` images are used as-is in CI.
+  imagePullPolicy: IfNotPresent
+  # Common labels applied to every resource.
+  labels: {}
+
+# ---------------------------------------------------------------------------- #
+# Secret references (names only — NO values). The named Secrets are created out
+# of band (CI: kubectl create secret; prod: sealed-secrets / external-secrets /
+# cloud KMS). templates/secrets.yaml documents the required keys per Secret.
+# ---------------------------------------------------------------------------- #
+secrets:
+  # Postgres superuser + app credentials.
+  postgres:
+    name: veridoc-postgres
+    usernameKey: POSTGRES_USER
+    passwordKey: POSTGRES_PASSWORD
+    databaseKey: POSTGRES_DB
+  # Redis auth (session store, D-10).
+  redis:
+    name: veridoc-redis
+    passwordKey: REDIS_PASSWORD
+  # Keycloak bootstrap admin + the reference-service OIDC client secret.
+  keycloak:
+    name: veridoc-keycloak
+    adminUserKey: KEYCLOAK_ADMIN
+    adminPasswordKey: KEYCLOAK_ADMIN_PASSWORD
+    clientSecretKey: REFERENCE_SERVICE_CLIENT_SECRET
+  # KMS / per-patient master key (veridoc-crypto). In prod this is wrapped by the
+  # cloud KMS (DEC-cloud-provider OPEN); the Secret carries only a reference/dev key.
+  kms:
+    name: veridoc-kms
+    masterKeyKey: VERIDOC_MASTER_KEY
+
+# ---------------------------------------------------------------------------- #
+# PostgreSQL (D-10) — audit chain, identity mirror, tenancy, encrypted PII.
+# ---------------------------------------------------------------------------- #
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "16-alpine"
+  replicas: 1
+  port: 5432
+  # Database name the reference service connects to.
+  database: veridoc
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  persistence:
+    # emptyDir in kind/CI (ephemeral); a PVC StorageClass is wired when a managed
+    # cluster lands (DEC-cloud-provider). Provider-portable: no cloud volume here.
+    enabled: false
+    size: 1Gi
+
+# ---------------------------------------------------------------------------- #
+# Redis (D-10) — session store.
+# ---------------------------------------------------------------------------- #
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7-alpine"
+  replicas: 1
+  port: 6379
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+
+# ---------------------------------------------------------------------------- #
+# Keycloak (D-01) — self-hosted IdP, Quarkus distro, realm imported on startup
+# (Pitfall 4). The realm JSON is mounted from a ConfigMap built off
+# deploy/keycloak/veridoc-realm.json.
+# ---------------------------------------------------------------------------- #
+keycloak:
+  enabled: true
+  image:
+    repository: quay.io/keycloak/keycloak
+    tag: "26.6.2"
+  replicas: 1
+  port: 8080
+  # Start in dev/import mode for kind/CI: `start-dev --import-realm`. A production
+  # overlay would use `start` with a configured hostname + TLS (deferred hardening).
+  startCommand: "start-dev"
+  importRealm: true
+  realm: veridoc
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+# ---------------------------------------------------------------------------- #
+# Reference service (D-07 walking skeleton) — the FastAPI app built from
+# services/reference-service/Dockerfile. The image is built + `kind load`ed in CI.
+# ---------------------------------------------------------------------------- #
+referenceService:
+  enabled: true
+  image:
+    # Overridden at deploy: in CI this is the locally built+loaded tag.
+    repository: veridoc/reference-service
+    tag: "ci"
+  replicas: 1
+  port: 8000
+  # Liveness/readiness probe target (GET /healthz — plan 01-05, open route).
+  healthPath: /healthz
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  # Non-secret runtime config (issuer/JWKS/audience). Secrets arrive via envFrom
+  # secretRef (see templates/reference-service.yaml + secrets.yaml).
+  config:
+    keycloakIssuer: "http://veridoc-keycloak:8080/realms/veridoc"
+    keycloakJwksUri: "http://veridoc-keycloak:8080/realms/veridoc/protocol/openid-connect/certs"
+    keycloakAudience: "reference-service"
+    redisUrl: "redis://veridoc-redis:6379/0"

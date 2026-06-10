@@ -42,6 +42,12 @@ Audit-trail service available from day one; all other services write to it.
   delivered in plan 01-03: AES-256-GCM envelope encryption via Google Tink behind a
   portable KMS abstraction, per-patient HKDF key hierarchy. TLS 1.3 in transit is an
   ingress/deploy concern landing with the reference service / Helm charts, 01-05/01-06.)*
+  *(8-role RBAC + OIDC/MFA enforcement + session/IP-allowlist hooks + fail-closed
+  multi-site/study tenancy delivered in plan 01-04: veridoc-auth verifies Keycloak JWTs
+  vs JWKS — RS256-pinned, MFA acr/amr asserted — with deny-by-default require_role across
+  the 8 roles and a data-driven per-tenant IP-allowlist hook; veridoc-tenancy carries a
+  request-scoped site/study contextvar that fails closed; the 8 roles + MFA OTP flow +
+  OIDC client are committed as deploy/keycloak/veridoc-realm.json with RBAC-MATRIX.md.)*
 
 ---
 
@@ -194,7 +200,7 @@ is parallel/non-blocking; production access is deferred).
 |-------------|-------|--------|
 | PLAT-01 | Phase 1 | Complete |
 | PLAT-02 | Phase 1 | Complete |
-| PLAT-03 | Phase 1 | In Progress (PII field-encryption + pseudonymization done in 01-03; RBAC/MFA/tenancy in 01-04) |
+| PLAT-03 | Phase 1 | Complete (PII field-encryption + pseudonymization in 01-03; 8-role RBAC + OIDC/MFA + fail-closed tenancy + Keycloak realm-as-code in 01-04) |
 | EMR-01 | Phase 2 | Pending |
 | RAVE-01 | Phase 3 | Pending |
 | AGENT-00 | Phase 4 | Pending |

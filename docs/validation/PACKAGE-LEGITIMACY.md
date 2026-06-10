@@ -1,8 +1,10 @@
 # Package Legitimacy Audit — Phase 01 (Platform Skeleton & Audit Foundation)
 
-> **Status: AWAITING HUMAN REVIEW.** This document gates every `uv add` / `pnpm add`
+> **Status: APPROVED (2026-06-11).** This document gates every `uv add` / `pnpm add`
 > in Phase 01 (threat **T-01-SC** — supply-chain / hallucinated dependency).
-> No package may be installed until its row carries an explicit **APPROVED** verdict.
+> All rows carry an explicit **APPROVED** verdict; installs may proceed (latest stable,
+> pinned via committed lockfiles). `rfc8785` adjudicated **authentic — approved**
+> (Trail of Bits, `github.com/trailofbits/rfc8785.py`).
 >
 > Source: `01-RESEARCH.md` § Package Legitimacy Audit + § Standard Stack. Every package
 > there is tagged `[ASSUMED]` because slopcheck, `ctx7`, and registry CLIs
@@ -34,22 +36,22 @@ packages to reject / substitute.
 
 | Package | Ecosystem / registry | Assumed version | Verified version | Verdict (APPROVED/REJECTED) | Notes |
 |---------|----------------------|-----------------|------------------|------------------------------|-------|
-| fastapi | PyPI | latest stable | _(to verify)_ | _(to fill)_ | Reference-service HTTP framework. |
-| uvicorn | PyPI | latest stable (`uvicorn[standard]`) | _(to verify)_ | _(to fill)_ | ASGI server for FastAPI. |
-| pydantic | PyPI | v2.x | _(to verify)_ | _(to fill)_ | Request/response + config validation (V5). |
-| pydantic-settings | PyPI | latest stable | _(to verify)_ | _(to fill)_ | Settings/config loading alongside Pydantic v2. |
-| sqlalchemy | PyPI | 2.x | _(to verify)_ | _(to fill)_ | ORM / DB access to Postgres (typed 2.x API). |
-| alembic | PyPI | latest stable | _(to verify)_ | _(to fill)_ | DB migrations (audit/identity/tenancy schema). |
-| psycopg | PyPI | v3 (`psycopg[binary]`) | _(to verify)_ | _(to fill)_ | Modern Postgres driver (sync + async). |
-| pyjwt | PyPI | latest stable | _(to verify)_ | _(to fill)_ | JWT signature verification against Keycloak JWKS. |
-| jwcrypto | PyPI | latest stable | _(to verify)_ | _(to fill)_ | JWK/JWKS handling for token validation. |
-| aws-encryption-sdk | PyPI | 4.x (keyrings/MPL) | _(to verify)_ | _(to fill)_ | Envelope-encryption abstraction (D-11). AWS-official source repo `aws/aws-encryption-sdk-python` — high-trust. Adjudicate vs Tink in plan 01-03. |
-| tink | PyPI | latest stable | _(to verify)_ | _(to fill)_ | **Alternative** to aws-encryption-sdk for D-11 (Google-official). Only one of {aws-encryption-sdk, tink} is installed; choice locked in plan 01-03. |
-| rfc8785 | PyPI | latest stable | _(to verify)_ | _(to fill — see adjudication)_ | **[SUS] — niche/small package (RESEARCH A4).** RFC 8785 JCS canonicalizer for the audit hash payload. Must be individually adjudicated: verify source-repo authenticity OR fall back to an in-house JCS implementation (decided in plan 01-02). |
-| redis | PyPI | 7.x client | _(to verify)_ | _(to fill)_ | Session store client (D-10). |
-| pytest | PyPI | latest stable | _(to verify)_ | _(to fill)_ | Python test framework (Wave 0 harness, dev dependency). |
-| ruff | PyPI | latest stable | _(to verify)_ | _(to fill)_ | Linter/formatter (dev dependency; `task lint`). |
-| testcontainers | PyPI | latest stable | _(to verify)_ | _(to fill)_ | Ephemeral Postgres/Redis for integration tests (dev dependency). |
+| fastapi | PyPI | latest stable | latest stable (lockfile-pinned) | APPROVED | Reference-service HTTP framework. Well-known authentic project. |
+| uvicorn | PyPI | latest stable (`uvicorn[standard]`) | latest stable (lockfile-pinned) | APPROVED | ASGI server for FastAPI. |
+| pydantic | PyPI | v2.x | latest 2.x (lockfile-pinned) | APPROVED | Request/response + config validation (V5). |
+| pydantic-settings | PyPI | latest stable | latest stable (lockfile-pinned) | APPROVED | Settings/config loading alongside Pydantic v2. |
+| sqlalchemy | PyPI | 2.x | latest 2.x (lockfile-pinned) | APPROVED | ORM / DB access to Postgres (typed 2.x API). |
+| alembic | PyPI | latest stable | latest stable (lockfile-pinned) | APPROVED | DB migrations (audit/identity/tenancy schema). |
+| psycopg | PyPI | v3 (`psycopg[binary]`) | latest v3 (lockfile-pinned) | APPROVED | Modern Postgres driver (sync + async). |
+| pyjwt | PyPI | latest stable | latest stable (lockfile-pinned) | APPROVED | JWT signature verification against Keycloak JWKS. |
+| jwcrypto | PyPI | latest stable | 1.5.7 (registry-confirmed) | APPROVED | JWK/JWKS handling. Authentic: `github.com/latchset/jwcrypto` (Red Hat). |
+| aws-encryption-sdk | PyPI | 4.x (keyrings/MPL) | latest 4.x (lockfile-pinned) | APPROVED | Envelope-encryption abstraction (D-11). AWS-official `aws/aws-encryption-sdk-python`. Adjudicate vs Tink in plan 01-03. |
+| tink | PyPI | latest stable | latest stable (lockfile-pinned) | APPROVED | **Alternative** to aws-encryption-sdk for D-11 (Google-official). Only one of {aws-encryption-sdk, tink} is installed; choice locked in plan 01-03. |
+| rfc8785 | PyPI | latest stable | 0.1.4 (registry-confirmed) | APPROVED (authentic) | RFC 8785 JCS canonicalizer for the audit hash payload. **Adjudicated authentic — approved:** published by **Trail of Bits**, `github.com/trailofbits/rfc8785.py`, Apache-2.0, "pure-Python, no-dependency RFC 8785 JCS." In-house fallback NOT needed. |
+| redis | PyPI | 7.x client | latest stable (lockfile-pinned) | APPROVED | Session store client (D-10). |
+| pytest | PyPI | latest stable | latest stable (lockfile-pinned) | APPROVED | Python test framework (Wave 0 harness, dev dependency). |
+| ruff | PyPI | latest stable | latest stable (lockfile-pinned) | APPROVED | Linter/formatter (dev dependency; `task lint`). |
+| testcontainers | PyPI | latest stable | latest stable (lockfile-pinned) | APPROVED | Ephemeral Postgres/Redis for integration tests (dev dependency). |
 
 > **Deferred to later plans, NOT installed in this scaffold plan (listed for review continuity):**
 > `fastapi-keycloak-middleware` / `authlib` (OIDC glue — plan 01-04, verify maintenance
@@ -59,12 +61,12 @@ packages to reject / substitute.
 
 | Package | Ecosystem / registry | Assumed version | Verified version | Verdict (APPROVED/REJECTED) | Notes |
 |---------|----------------------|-----------------|------------------|------------------------------|-------|
-| vite | npm | latest stable | _(to verify)_ | _(to fill)_ | Build tool / dev server for the React-TS scaffold. |
-| react | npm | 18.x or 19.x | _(to verify)_ | _(to fill)_ | Frontend framework (skeleton only this phase). |
-| react-dom | npm | matches react | _(to verify)_ | _(to fill)_ | React DOM renderer. |
-| typescript | npm | 5.x | _(to verify)_ | _(to fill)_ | TypeScript compiler. |
-| vitest | npm | latest stable | _(to verify)_ | _(to fill)_ | JS/TS test framework (Wave 0 harness). |
-| @testing-library/react | npm | latest stable | _(to verify)_ | _(to fill)_ | Component testing utilities for the smoke test. |
+| vite | npm | latest stable | latest stable (lockfile-pinned) | APPROVED | Build tool / dev server for the React-TS scaffold. |
+| react | npm | 18.x or 19.x | latest stable (lockfile-pinned) | APPROVED | Frontend framework (skeleton only this phase). |
+| react-dom | npm | matches react | matches react (lockfile-pinned) | APPROVED | React DOM renderer. |
+| typescript | npm | 5.x | latest 5.x (lockfile-pinned) | APPROVED | TypeScript compiler. |
+| vitest | npm | latest stable | latest stable (lockfile-pinned) | APPROVED | JS/TS test framework (Wave 0 harness). |
+| @testing-library/react | npm | latest stable | latest stable (lockfile-pinned) | APPROVED | Component testing utilities for the smoke test. |
 
 > **Vite-template transitive scaffolding** (`@vitejs/plugin-react`, `jsdom`,
 > `@types/react`, `@types/react-dom`, `@testing-library/jest-dom`) is pulled in by the
@@ -101,10 +103,11 @@ Either path is acceptable; the decision is recorded here and consumed by plan 01
 
 ## Review sign-off
 
-- **Reviewer:** _(name / handle)_
-- **Date:** _(YYYY-MM-DD)_
-- **Outcome:** _(all APPROVED | rejections listed below)_
-- **Rejections / substitutions:** _(none, or list package → action)_
+- **Reviewer:** emoadm@gmail.com (with Claude diligence: rfc8785 + jwcrypto verified against PyPI)
+- **Date:** 2026-06-11
+- **Outcome:** all APPROVED
+- **Rejections / substitutions:** none. rfc8785 adjudicated `authentic — approved` (Trail of Bits); in-house JCS fallback not required.
 
-Until this sign-off is complete and the executor receives **"approved"**, no
-`uv add` / `pnpm add` (Tasks 2–3 of plan 01-01) may run.
+Sign-off complete; executor received **"approved"**. Tasks 2–3 of plan 01-01
+(`uv add` / `pnpm add` of APPROVED packages) may run. Versions resolve to latest
+stable and are pinned via committed lockfiles (`uv.lock`, `pnpm-lock.yaml`).

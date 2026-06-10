@@ -4,8 +4,14 @@ version = "0.0.0"
 description = "VeriDoc envelope-encryption helper behind a portable KMS/HSM abstraction (D-11). Per-patient HKDF-derived key hierarchy."
 readme = "README.md"
 requires-python = ">=3.12"
-# Real dependencies (aws-encryption-sdk OR tink — adjudicated in plan 01-03) added there.
-dependencies = []
+# KMS/envelope-encryption library adjudicated in plan 01-03 (Task 1): Google Tink
+# (tink-hkdf) — APPROVED in docs/validation/PACKAGE-LEGITIMACY.md (Google-official).
+# aws-encryption-sdk is NOT installed for this library (only one of the two is used).
+#   tink — AEAD (AES-256-GCM) envelope encryption + portable KMS (AWS KMS / Azure KV).
+# Per-patient key derivation uses RFC 5869 HKDF over the Python stdlib (hmac/hashlib).
+dependencies = [
+    "tink>=1.10",
+]
 
 [build-system]
 requires = ["hatchling"]

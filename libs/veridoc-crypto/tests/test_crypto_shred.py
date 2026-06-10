@@ -8,7 +8,6 @@ Behavior under test (plan 01-03 Task 2):
 """
 
 import pytest
-
 from veridoc_crypto import (
     decrypt_field,
     encrypt_field,

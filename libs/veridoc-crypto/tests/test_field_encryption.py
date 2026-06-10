@@ -9,7 +9,7 @@ Behavior under test (plan 01-03 Task 2):
 """
 
 import pytest
-
+from tink import TinkError
 from veridoc_crypto import (
     decrypt_field,
     derive_patient_key,
@@ -60,13 +60,11 @@ def test_per_patient_key_isolation():
 
 def test_derive_patient_key_is_deterministic():
     master = b"\x02" * 32
-    assert derive_patient_key(master, "patient-A") == derive_patient_key(
-        master, "patient-A"
-    )
+    assert derive_patient_key(master, "patient-A") == derive_patient_key(master, "patient-A")
 
 
 def test_cross_patient_decrypt_fails():
     # A field encrypted under patient A must not decrypt under patient B's key.
     ct = encrypt_field("patient-A", "secret")
-    with pytest.raises(Exception):
+    with pytest.raises(TinkError):
         decrypt_field("patient-B", ct)

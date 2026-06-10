@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-04-PLAN.md.
+stopped_at: Completed 01-05-PLAN.md.
 last_updated: "2026-06-11T00:00:00.000Z"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 6
-  completed_plans: 4
-  percent: 67
+  completed_plans: 5
+  percent: 83
 ---
 
 # VeriDoc AI — Project State
@@ -34,18 +34,18 @@ Project memory. Updated as work progresses.
 ## Current Position
 
 Phase: 01 (platform-skeleton-audit-foundation) — EXECUTING
-Plan: 5 of 6 (next)
+Plan: 6 of 6 (next)
 
 - **Phase:** 1 — Platform Skeleton & Audit Foundation (executing)
-- **Plan:** 01-04 COMPLETE — veridoc-auth (OIDC JWKS verify + RS256-pinned + MFA acr/amr enforcement, deny-by-default 8-role RBAC, data-driven IP-allowlist hook) + veridoc-tenancy (fail-closed request-scoped site/study contextvar) + Keycloak realm-as-code (8 roles, MFA OTP flow, OIDC client) + RBAC matrix; PLAT-03 now COMPLETE. Next is 01-05 (reference service wired end-to-end).
+- **Plan:** 01-05 COMPLETE — reference-service wired end-to-end (D-07 walking skeleton): FastAPI POST/PUT /subjects flows HTTP → Keycloak-style JWT authn+MFA (veridoc-auth) → deny-by-default RBAC → fail-closed site/study tenancy (veridoc-tenancy) → deterministic pseudonym (veridoc-pseudonym) + AES-256-GCM envelope-encrypted PII (veridoc-crypto) → SAME-transaction hash-chained audit (veridoc-audit) → Postgres (atomic business+audit). Login attempts (success+failure) audited; GDPR Art.17 erasure × 21 CFR Part 11 immutability seam proven once (erase A → verify_chain still True, A undecryptable, B intact). Non-root secret-free Dockerfile for plan 06. PLAT-01/02/03 satisfied end-to-end. Next is 01-06 (CI + kind deploy).
 - **Status:** Executing Phase 01
-- **Progress:** Phase 0/8 complete; plans 4/6 in phase 01
-  `[███████░░░] 67%`
+- **Progress:** Phase 0/8 complete; plans 5/6 in phase 01
+  `[████████░░] 83%`
 
 ## Performance Metrics
 
 - Phases complete: 0/8
-- Plans complete: 4/6 (phase 01)
+- Plans complete: 5/6 (phase 01)
 - Requirements mapped: 16/16 (100%)
 - Orphaned requirements: 0
 
@@ -55,6 +55,7 @@ Plan: 5 of 6 (next)
 | 01 | 02 | ~40min | 2 | 18 |
 | 01 | 03 | ~30min | 3 | 13 |
 | 01 | 04 | ~25min | 3 | 18 |
+| 01 | 05 | ~55min | 3 | 24 |
 
 ## Accumulated Context
 
@@ -151,24 +152,31 @@ Plan: 5 of 6 (next)
 
 ## Session Continuity
 
-- **Last action:** Executed plan 01-04 (veridoc-auth + veridoc-tenancy + Keycloak realm-as-code),
-  all 3 tasks TDD RED→GREEN. Task 1: deploy/keycloak/veridoc-realm.json (8 roles, browser-mfa
-  REQUIRED OTP flow, acr.loa.map, confidential reference-service OIDC client + audience/role/
-  tenant mappers, session timeouts; no plaintext secrets — Pitfall 4 closed) + RBAC-MATRIX.md.
-  Task 2: jwks.py (kid-keyed JWKSCache, jwcrypto parse, offline ctor), middleware.py (verify_token
-  RS256-pinned — rejects alg=none/HS256 — + iss/aud/exp + MFA acr/amr; Principal), rbac.py
-  (deny-by-default require_role/check_roles over the 8 roles, 403), allowlist.py (data-driven
-  per-tenant IP hook). Task 3: context.py (fail-closed Tenant contextvar; current_tenant raises
-  if unset; tenant_from_claims raises on missing site/study) + middleware.py (tenancy_middleware
-  from Principal claims + ASGI factory). 32 tests green (6 realm + 19 jwt/rbac + 7 tenancy) with
-  no cloud/DB/Docker; full lib suite 59 passed/7 skipped; ruff clean. Commits 8017d1b, 3ad0d90,
-  9f441e9, 4be7d12, 53666fa, aec2144, 8149331. pyjwt[crypto]+jwcrypto installed (APPROVED);
-  cryptography (PyCA) recorded APPROVED before install; no OIDC-glue package adopted. PLAT-03
-  now COMPLETE (RBAC/MFA/tenancy + the earlier 01-03 PII encryption/pseudonym).
+- **Last action:** Executed plan 01-05 (reference service wired end-to-end — D-07 walking
+  skeleton). Task 1 (TDD RED→GREEN): config.py (pydantic-settings DB/Redis/Keycloak/KMS),
+  db.py (SQLAlchemy 2.x engine + per-request session, handler-owned commit), models.py Subject
+  (tenant_id, pseudonym_token, pii_ciphertext bytea), migrations/0001_subject.py + migrate.py
+  (applies audit_log 0001 then subject), api/subjects.py (POST/PUT derive pseudonym +
+  envelope-encrypt PII + insert/update from current_tenant() + append_audit in the SAME txn +
+  commit once; Pydantic v2 extra=forbid; deny-by-default require_write_role), main.py
+  create_app (async authn dependency: verify_token RS256+MFA + fail-closed tenancy bind;
+  AuthError/ForbiddenError/TenancyError→401/403; open /healthz). Task 2 (TDD RED→GREEN):
+  auth_audit.py (login-success/login-failure auditing wired into the authn dependency, each
+  committed append-only) + create audit `after` carries base64 ciphertext; test_rbac (permitted
+  2xx / cross-role 403 / cross-tenant denied / missing-MFA 401), test_login_audit (success+failure
+  both audited), test_field_encryption (raw column ciphertext≠plaintext; decrypt round-trips),
+  test_erasure_audit_immutability (erase A → verify_chain still True, A undecryptable, B intact);
+  deploy/keycloak/test-users.json (6 users, 4 roles, 2 tenants, MFA). Task 3: non-root,
+  secret-free multi-stage Dockerfile (uvicorn reference_service.main:app). 14 ref-service tests
+  green vs local least-privilege Postgres; full repo 80 passed; clean-clone 59 passed/21 skipped;
+  ruff clean. Commits b248bce, e3341d0, 95722a7, 7b1a5cc, 4f4cbec, e5bae2f. httpx recorded
+  APPROVED before install (Encode, FastAPI test transport); fastapi/uvicorn/pydantic-settings
+  installed (all APPROVED); no OIDC-glue package adopted. PLAT-01/02/03 proven end-to-end.
 
-- **Next action:** Execute plan 01-05 (reference service wired end-to-end: HTTP → authn/RBAC →
-  tenancy → envelope-encrypted PII + pseudonym → same-transaction hash-chained audit; live
-  Keycloak token round-trip + Dockerfile).
+- **Next action:** Execute plan 01-06 (CI + kind deploy): build/load the reference-service
+  Dockerfile, import veridoc-realm.json + test-users.json into a live Keycloak, run the DB- and
+  Keycloak-backed tests in CI (Alembic env.py for both migrations), inject the client secret +
+  KMS master key from K8s Secrets.
 
-- **Stopped at:** Completed 01-04-PLAN.md.
+- **Stopped at:** Completed 01-05-PLAN.md.
 - **Resume file:** None.

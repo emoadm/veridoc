@@ -53,6 +53,7 @@ packages to reject / substitute.
 | pytest | PyPI | latest stable | latest stable (lockfile-pinned) | APPROVED | Python test framework (Wave 0 harness, dev dependency). |
 | ruff | PyPI | latest stable | latest stable (lockfile-pinned) | APPROVED | Linter/formatter (dev dependency; `task lint`). |
 | testcontainers | PyPI | latest stable | latest stable (lockfile-pinned) | APPROVED | Ephemeral Postgres/Redis for integration tests (dev dependency). |
+| httpx | PyPI | latest stable | latest stable (lockfile-pinned) | APPROVED | **Test transport for FastAPI/Starlette `TestClient`** (dev dependency). Authentic: **Encode** (`github.com/encode/httpx`), the de-facto async HTTP client and FastAPI's official testing dependency — same maintainer org as Starlette/uvicorn. Added at plan 01-05 (reference service) per the decision-context directive: a needed package not yet in the table is recorded with a verified verdict before install (the 01-04 `cryptography` precedent). Required by `fastapi.testclient.TestClient` to exercise the live HTTP path in the integration tests. |
 
 > **Deferred to later plans, NOT installed in this scaffold plan (listed for review continuity):**
 > `fastapi-keycloak-middleware` / `authlib` (OIDC glue — plan 01-04, verify maintenance
@@ -64,6 +65,12 @@ packages to reject / substitute.
 > an unlisted OIDC-glue package). `fastapi-keycloak-middleware` and `authlib` remain
 > **NOT installed**. The only newly-installed package is `cryptography` (row added above) —
 > the authentic PyCA transitive dependency that `pyjwt[crypto]`/`jwcrypto` require for RS256.
+>
+> **Plan 01-05 reference-service (2026-06-11):** the reference service installs the
+> already-APPROVED `fastapi`, `uvicorn[standard]`, `pydantic-settings`, `sqlalchemy`,
+> `alembic`, `psycopg[binary]` (all rows above). The one newly-recorded package is `httpx`
+> (row added above, verdict APPROVED — Encode, FastAPI's official test transport), needed by
+> `TestClient` to drive the integration tests over real HTTP. No OIDC-glue package adopted.
 
 ## JavaScript / TypeScript packages (registry: npm)
 

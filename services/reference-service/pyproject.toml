@@ -4,14 +4,21 @@ version = "0.0.0"
 description = "VeriDoc walking-skeleton FastAPI reference service: HTTP -> Keycloak authn/authz -> tenancy -> envelope-encrypted PII + deterministic pseudonym -> same-transaction hash-chained audit -> Postgres (D-07)."
 readme = "README.md"
 requires-python = ">=3.12"
-# Depends on all five shared platform libs (resolved as workspace members).
-# FastAPI/uvicorn/sqlalchemy/etc. are added in plan 01-05 when the service is implemented.
+# Depends on all five shared platform libs (resolved as workspace members) plus the
+# APPROVED service runtime stack (plan 01-05). All packages are APPROVED in
+# docs/validation/PACKAGE-LEGITIMACY.md.
 dependencies = [
     "veridoc-audit",
     "veridoc-crypto",
     "veridoc-pseudonym",
     "veridoc-auth",
     "veridoc-tenancy",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic-settings>=2.0",
+    "sqlalchemy>=2.0",
+    "alembic>=1.18",
+    "psycopg[binary]>=3.2",
 ]
 
 [build-system]

@@ -94,17 +94,14 @@ def engine(db_url: str):
 @pytest.fixture()
 def migrated_engine(engine):
     """Apply BOTH migrations (audit_log + subject) to a clean schema, tearing down after."""
-    from reference_service.migrations import audit_migration, subject_migration
+    from reference_service.migrate import apply_all, revert_all
 
     with engine.begin() as conn:
-        subject_migration.revert(conn)
-        audit_migration.revert(conn)
-        audit_migration.apply(conn)
-        subject_migration.apply(conn)
+        revert_all(conn)
+        apply_all(conn)
     yield engine
     with engine.begin() as conn:
-        subject_migration.revert(conn)
-        audit_migration.revert(conn)
+        revert_all(conn)
 
 
 # --------------------------------------------------------------------------- #

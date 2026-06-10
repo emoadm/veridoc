@@ -38,6 +38,10 @@ Audit-trail service available from day one; all other services write to it.
 - MFA, session management, IP allowlisting hooks
 - Multi-site / multi-study tenancy model in the data layer
 - Field-level encryption for PII; AES-256 at rest, TLS 1.3 in transit
+  *(PII field-level encryption + deterministic pseudonymization + crypto-shred erasure
+  delivered in plan 01-03: AES-256-GCM envelope encryption via Google Tink behind a
+  portable KMS abstraction, per-patient HKDF key hierarchy. TLS 1.3 in transit is an
+  ingress/deploy concern landing with the reference service / Helm charts, 01-05/01-06.)*
 
 ---
 
@@ -190,7 +194,7 @@ is parallel/non-blocking; production access is deferred).
 |-------------|-------|--------|
 | PLAT-01 | Phase 1 | Complete |
 | PLAT-02 | Phase 1 | Complete |
-| PLAT-03 | Phase 1 | Pending |
+| PLAT-03 | Phase 1 | In Progress (PII field-encryption + pseudonymization done in 01-03; RBAC/MFA/tenancy in 01-04) |
 | EMR-01 | Phase 2 | Pending |
 | RAVE-01 | Phase 3 | Pending |
 | AGENT-00 | Phase 4 | Pending |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-02-PLAN.md.
-last_updated: "2026-06-10T22:10:02.662Z"
+stopped_at: Completed 01-03-PLAN.md.
+last_updated: "2026-06-11T00:00:00.000Z"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 6
-  completed_plans: 2
-  percent: 33
+  completed_plans: 3
+  percent: 50
 ---
 
 # VeriDoc AI — Project State
@@ -34,18 +34,18 @@ Project memory. Updated as work progresses.
 ## Current Position
 
 Phase: 01 (platform-skeleton-audit-foundation) — EXECUTING
-Plan: 3 of 6 (next)
+Plan: 4 of 6 (next)
 
 - **Phase:** 1 — Platform Skeleton & Audit Foundation (executing)
-- **Plan:** 01-02 COMPLETE — veridoc-audit SDK (JCS + hash chain + same-txn writer + tamper detection); next is 01-03 (crypto + pseudonym)
+- **Plan:** 01-03 COMPLETE — veridoc-crypto + veridoc-pseudonym (per-patient HKDF key hierarchy, AES-256-GCM envelope encryption via Tink, deterministic pseudonym, crypto-shred); next is 01-04 (auth + tenancy)
 - **Status:** Executing Phase 01
-- **Progress:** Phase 0/8 complete; plans 2/6 in phase 01
-  `[███░░░░░░░] 33%`
+- **Progress:** Phase 0/8 complete; plans 3/6 in phase 01
+  `[█████░░░░░] 50%`
 
 ## Performance Metrics
 
 - Phases complete: 0/8
-- Plans complete: 2/6 (phase 01)
+- Plans complete: 3/6 (phase 01)
 - Requirements mapped: 16/16 (100%)
 - Orphaned requirements: 0
 
@@ -53,6 +53,7 @@ Plan: 3 of 6 (next)
 |-------|------|----------|-------|-------|
 | 01 | 01 | ~25min | 3 | 44 |
 | 01 | 02 | ~40min | 2 | 18 |
+| 01 | 03 | ~30min | 3 | 13 |
 
 ## Accumulated Context
 
@@ -85,6 +86,15 @@ Plan: 3 of 6 (next)
   pg_advisory_xact_lock to serialize the chain head (no fork), and NEVER commits (D-05);
   append-only enforced by a BEFORE UPDATE OR DELETE trigger + INSERT/SELECT-only grant.
   audit_log carries nullable agent_decision/agent_confidence now (D-06).
+
+- DEC-kms-tink-hkdf (01-03) — Google Tink (tink-hkdf) backs the KMS abstraction;
+  aws-encryption-sdk NOT installed for veridoc-crypto. Master key + per-patient HKDF-derived
+  key hierarchy; a GLOBAL pseudonym/encryption key is EXPLICITLY REJECTED (Pitfall 3, A7).
+  Field encryption = AES-256-GCM envelope (per-field DEK wrapped by the per-patient key via
+  Tink AEAD; patient_id as AAD; NOT pgcrypto). Pseudonym = HMAC-SHA256 over the SAME
+  per-patient key (D-12, no re-identification table). Erasure = delete the patient's HKDF
+  derivation material (crypto-shred) → ciphertext undecryptable + token irrecomputable,
+  others intact, audit trail preserved (GDPR Art. 17). KEY-HIERARCHY.md records it (A7 resolved).
 
 ### Open decisions
 
@@ -121,13 +131,19 @@ Plan: 3 of 6 (next)
 
 ## Session Continuity
 
-- **Last action:** Executed plan 01-02 (veridoc-audit SDK), TDD across 2 tasks: RFC 8785 JCS
-  canonicalization + SHA-256 hash chain, append-only audit_log schema + immutability trigger
-  (nullable D-06 agent fields), and the same-transaction advisory-locked append_audit writer.
-  18 tests green (tamper-detection phase gate + same-txn atomicity). Commits fb3bc1a, c4287be,
-  2254a11, d7ef7af. PLAT-02 complete; SUMMARY written.
+- **Last action:** Executed plan 01-03 (veridoc-crypto + veridoc-pseudonym) under ONE
+  per-patient key hierarchy. Task 1 (pre-resolved checkpoint:decision) recorded tink-hkdf in
+  docs/validation/KEY-HIERARCHY.md (Google Tink, master+HKDF per-patient, global key rejected,
+  erasure = delete derivation material). Tasks 2 & 3 TDD RED→GREEN: keys.py (RFC 5869 HKDF +
+  erase_patient/KeyErasedError), kms.py (portable KMSKeyring wrap/unwrap via Tink AEAD +
+  LocalKeyring + AWS/Azure stubs), envelope.py (AES-256-GCM envelope, DEK wrapped by per-patient
+  key, patient_id AAD), pseudonym.py (HMAC-SHA256 over the SHARED per-patient key). 16 tests green
+  (field-encryption, crypto-shred, deterministic pseudonym) with no cloud/DB/Docker. Commits
+  64d384e, cbf8796, 6351b1e, 7f5708a, 0697ce1. tink installed (APPROVED); aws-encryption-sdk NOT
+  installed. PLAT-03 PII-encryption/pseudonym portion done (RBAC/MFA/tenancy remain for 01-04).
 
-- **Next action:** Execute plan 01-03 (veridoc-crypto + veridoc-pseudonym: per-patient key
-  hierarchy, envelope encryption, crypto-shred).
-- **Stopped at:** Completed 01-02-PLAN.md.
+- **Next action:** Execute plan 01-04 (veridoc-auth + veridoc-tenancy: Keycloak realm-as-code,
+  OIDC/MFA/8-role RBAC, fail-closed tenancy).
+
+- **Stopped at:** Completed 01-03-PLAN.md.
 - **Resume file:** None.

@@ -10,7 +10,6 @@ no separate global pseudonym key, no re-identification lookup table). Behavior:
 """
 
 import pytest
-
 from veridoc_crypto import encrypt_field, erase_patient
 from veridoc_crypto.keys import KeyErasedError, reset_keystore
 from veridoc_pseudonym import pseudonym_token

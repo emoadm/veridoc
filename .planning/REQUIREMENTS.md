@@ -188,7 +188,7 @@ is parallel/non-blocking; production access is deferred).
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PLAT-01 | Phase 1 | Pending |
+| PLAT-01 | Phase 1 | Complete |
 | PLAT-02 | Phase 1 | Pending |
 | PLAT-03 | Phase 1 | Pending |
 | EMR-01 | Phase 2 | Pending |

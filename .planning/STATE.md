@@ -3,13 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-10T21:47:27.751Z"
+stopped_at: Completed 01-02-PLAN.md.
+last_updated: "2026-06-10T22:10:02.662Z"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 6
-  completed_plans: 1
-  percent: 17
+  completed_plans: 2
+  percent: 33
 ---
 
 # VeriDoc AI — Project State
@@ -33,24 +34,25 @@ Project memory. Updated as work progresses.
 ## Current Position
 
 Phase: 01 (platform-skeleton-audit-foundation) — EXECUTING
-Plan: 2 of 6 (next)
+Plan: 3 of 6 (next)
 
 - **Phase:** 1 — Platform Skeleton & Audit Foundation (executing)
-- **Plan:** 01-01 COMPLETE — monorepo skeleton + Wave 0 test harness; next is 01-02 (audit SDK)
+- **Plan:** 01-02 COMPLETE — veridoc-audit SDK (JCS + hash chain + same-txn writer + tamper detection); next is 01-03 (crypto + pseudonym)
 - **Status:** Executing Phase 01
-- **Progress:** Phase 0/8 complete; plans 1/6 in phase 01
-  `[██░░░░░░░░] 17%`
+- **Progress:** Phase 0/8 complete; plans 2/6 in phase 01
+  `[███░░░░░░░] 33%`
 
 ## Performance Metrics
 
 - Phases complete: 0/8
-- Plans complete: 1/6 (phase 01)
+- Plans complete: 2/6 (phase 01)
 - Requirements mapped: 16/16 (100%)
 - Orphaned requirements: 0
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
 | 01 | 01 | ~25min | 3 | 44 |
+| 01 | 02 | ~40min | 2 | 18 |
 
 ## Accumulated Context
 
@@ -68,10 +70,21 @@ Plan: 2 of 6 (next)
 
 - DEC-monorepo-tooling (01-01) — uv (Python) + pnpm (JS/TS) workspaces glued by go-task
   (Taskfile); NOT Nx/Turborepo (D-08). uv chosen over Poetry; go-task over Make.
+
 - DEC-supply-chain-gate (01-01) — every third-party install gated by committed
   docs/validation/PACKAGE-LEGITIMACY.md; lockfiles + .tool-versions pinned (T-01-SC/01).
+
 - DEC-rfc8785-authentic (01-01) — rfc8785 adjudicated authentic (Trail of Bits); install
   the package in plan 01-02, no in-house JCS fallback.
+
+- DEC-audit-hash-chain (01-02) — audit chain = SHA-256(prev_hash || rfc8785-JCS(payload)),
+  genesis prev_hash = ""; deterministic hash payload excludes server columns and normalizes
+  occurred_at to UTC microsecond ISO (single _payload helper) so persisted rows re-hash exactly.
+
+- DEC-audit-same-txn-writer (01-02) — append_audit joins the caller's Session, takes
+  pg_advisory_xact_lock to serialize the chain head (no fork), and NEVER commits (D-05);
+  append-only enforced by a BEFORE UPDATE OR DELETE trigger + INSERT/SELECT-only grant.
+  audit_log carries nullable agent_decision/agent_confidence now (D-06).
 
 ### Open decisions
 
@@ -108,11 +121,13 @@ Plan: 2 of 6 (next)
 
 ## Session Continuity
 
-- **Last action:** Executed plan 01-01 (Tasks 2–3 after the approved package-legitimacy
-  gate): uv+pnpm monorepo skeleton, five lib members + reference-service, Taskfile, and a
-  green pytest+Vitest Wave 0 harness. Commits 80a292d, 1f1ff54. PLAT-01 (build/lint half)
-  complete; SUMMARY written.
+- **Last action:** Executed plan 01-02 (veridoc-audit SDK), TDD across 2 tasks: RFC 8785 JCS
+  canonicalization + SHA-256 hash chain, append-only audit_log schema + immutability trigger
+  (nullable D-06 agent fields), and the same-transaction advisory-locked append_audit writer.
+  18 tests green (tamper-detection phase gate + same-txn atomicity). Commits fb3bc1a, c4287be,
+  2254a11, d7ef7af. PLAT-02 complete; SUMMARY written.
 
-- **Next action:** Execute plan 01-02 (veridoc-audit: rfc8785 JCS + hash chain).
-- **Stopped at:** Completed 01-01-PLAN.md.
+- **Next action:** Execute plan 01-03 (veridoc-crypto + veridoc-pseudonym: per-patient key
+  hierarchy, envelope encryption, crypto-shred).
+- **Stopped at:** Completed 01-02-PLAN.md.
 - **Resume file:** None.

@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
-status: phase-complete
-stopped_at: Completed 01-06-PLAN.md — Phase 1 complete (CI deploy + tamper gate green).
-last_updated: "2026-06-11T00:00:00.000Z"
+status: planning
+stopped_at: Phase 2 context gathered
+last_updated: "2026-06-11T09:25:25.464Z"
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 6
   completed_plans: 6
-  percent: 100
+  percent: 13
 ---
 
 # VeriDoc AI — Project State
@@ -178,5 +178,5 @@ Plan: 6 of 6 (all complete)
   Keycloak-backed tests in CI (Alembic env.py for both migrations), inject the client secret +
   KMS master key from K8s Secrets.
 
-- **Stopped at:** Completed 01-05-PLAN.md.
-- **Resume file:** None.
+- **Stopped at:** Phase 2 context gathered
+- **Resume file:** .planning/phases/02-fhir-r4-model-emr-ingestion/02-CONTEXT.md

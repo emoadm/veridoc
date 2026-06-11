@@ -46,6 +46,16 @@ secrets:
   kms:
     name: veridoc-kms
     masterKeyKey: VERIDOC_MASTER_KEY
+  # MongoDB superuser credentials (D-02 clinical-document store, T-02-INFRA-01).
+  mongodb:
+    name: veridoc-mongodb
+    usernameKey: MONGO_INITDB_ROOT_USERNAME
+    passwordKey: MONGO_INITDB_ROOT_PASSWORD
+  # MinIO root credentials (D-10 blob store, T-02-INFRA-02).
+  minio:
+    name: veridoc-minio
+    usernameKey: MINIO_ROOT_USER
+    passwordKey: MINIO_ROOT_PASSWORD
 
 # ---------------------------------------------------------------------------- #
 # PostgreSQL (D-10) — audit chain, identity mirror, tenancy, encrypted PII.
@@ -143,3 +153,29 @@ referenceService:
     keycloakJwksUri: "http://veridoc-keycloak:8080/realms/veridoc/protocol/openid-connect/certs"
     keycloakAudience: "reference-service"
     redisUrl: "redis://veridoc-redis:6379/0"
+
+# ---------------------------------------------------------------------------- #
+# MongoDB (D-02) — canonical FHIR R4B document store (clinical documents).
+# Credentials via veridoc-mongodb Secret (T-02-INFRA-01 — never inlined).
+# ---------------------------------------------------------------------------- #
+mongodb:
+  enabled: true
+  image:
+    repository: mongo
+    tag: "7-jammy"
+  replicas: 1
+  port: 27017
+  # Database name the ingestion service connects to (veridoc_fhir).
+  database: veridoc_fhir
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  persistence:
+    # emptyDir in kind/CI (ephemeral); a PVC StorageClass is wired when a managed
+    # cluster lands (DEC-cloud-provider). Provider-portable: no cloud volume here.
+    enabled: false
+    size: 5Gi

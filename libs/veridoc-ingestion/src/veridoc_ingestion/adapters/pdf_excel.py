@@ -22,12 +22,15 @@ Pattern analog: :class:`~veridoc_ingestion.adapters.native_fhir.NativeFhirAdapte
 from __future__ import annotations
 
 import io
+import logging
 import uuid
 
 from ..adapter import SourceAdapter, SourceProfile
 from ..extraction import RuleBasedExtractor
 
 __all__ = ["PdfExcelAdapter"]
+
+_log = logging.getLogger(__name__)
 
 # Default extractor (rule-based only this phase — D-09)
 _EXTRACTOR = RuleBasedExtractor()
@@ -163,6 +166,7 @@ class PdfExcelAdapter(SourceAdapter):
         entity_dicts = self._extractor.extract(text)
 
         resources: list = []
+        dropped = 0  # WR-01: count observations lost to R4B validation failures
 
         # Build a Patient resource (pseudonymized)
         patient = Patient.model_validate({
@@ -192,8 +196,23 @@ class PdfExcelAdapter(SourceAdapter):
                 try:
                     obs = Observation.model_validate(entity_dict)
                     resources.append(obs)
-                except Exception:  # noqa: BLE001
-                    # Skip observations that fail R4B validation
-                    continue
+                except Exception as exc:  # noqa: BLE001
+                    # WR-01: do NOT silently drop — log the loss so missing lab
+                    # observations are visible/auditable rather than vanishing.
+                    dropped += 1
+                    _log.warning(
+                        "pdf_excel: dropped Observation that failed R4B validation "
+                        "(site_id=%s): %s",
+                        profile.site_id,
+                        exc,
+                    )
+
+        if dropped:
+            _log.warning(
+                "pdf_excel: dropped %d Observation(s) for site_id=%s due to R4B "
+                "validation failures",
+                dropped,
+                profile.site_id,
+            )
 
         return resources

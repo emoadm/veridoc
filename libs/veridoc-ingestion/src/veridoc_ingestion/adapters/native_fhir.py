@@ -23,11 +23,14 @@ Pattern analog: ``libs/veridoc-crypto/src/veridoc_crypto/kms.py`` LocalKeyring
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 
 from ..adapter import SourceAdapter, SourceProfile
 
 __all__ = ["NativeFhirAdapter"]
+
+_log = logging.getLogger(__name__)
 
 # Resource types in scope (Phase 2 EMR-01). Synthea bundles include many others
 # (Claim, ExplanationOfBenefit, Immunization, …) that we intentionally exclude.
@@ -170,6 +173,7 @@ class NativeFhirAdapter(SourceAdapter):
         natural_id = raw_patient_id
 
         resources: list = []
+        dropped = 0  # WR-01: count resources lost to R4B validation failures
 
         for entry in entries:
             resource = entry.get("resource", {})
@@ -189,8 +193,28 @@ class NativeFhirAdapter(SourceAdapter):
             try:
                 model = cls.model_validate(resource)
                 resources.append(model)
-            except Exception:  # noqa: BLE001
-                # Skip resources that fail R4B validation (e.g. Synthea extensions)
-                continue
+            except Exception as exc:  # noqa: BLE001
+                # WR-01: do NOT silently drop. A dropped clinical resource is data
+                # loss — log it (resourceType + error + site) and count it so the
+                # loss is visible/auditable. We still continue the batch so one bad
+                # resource does not abort the whole bundle.
+                dropped += 1
+                _log.warning(
+                    "native_fhir: dropped resource that failed R4B validation "
+                    "(site_id=%s resourceType=%s resource_id=%s): %s",
+                    profile.site_id,
+                    res_type,
+                    resource.get("id"),
+                    exc,
+                )
+
+        if dropped:
+            _log.warning(
+                "native_fhir: dropped %d/%d in-scope resource(s) for site_id=%s "
+                "due to R4B validation failures",
+                dropped,
+                dropped + len(resources),
+                profile.site_id,
+            )
 
         return resources

@@ -47,9 +47,15 @@ KID = "reference-service-test-key"
 
 
 def _normalize_url(url: str) -> str:
-    """Force the psycopg (v3) driver so the binary wheel is used."""
-    if url.startswith("postgresql://"):
-        return url.replace("postgresql://", "postgresql+psycopg://", 1)
+    """Force the psycopg (v3) driver so the binary wheel is used.
+
+    testcontainers' ``get_connection_url()`` yields a ``postgresql+psycopg2://`` URL and
+    env-var URLs may use a bare ``postgresql://`` — both must resolve to psycopg v3, else
+    SQLAlchemy tries to import the (uninstalled) psycopg2 driver.
+    """
+    for prefix in ("postgresql+psycopg2://", "postgresql+psycopg://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix) :]
     return url
 
 

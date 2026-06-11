@@ -24,17 +24,20 @@ def _build_modality_map() -> dict[SourceModality, type[SourceAdapter]]:
 
     Imports are deferred (inside this function) so that missing optional
     dependencies in partial installs do not break the import of this module.
-    The four real adapters are wired by plan 02-05; only PROPRIETARY is live now.
+    All four real adapters added in plan 02-05.
     """
+    from .adapters.native_fhir import NativeFhirAdapter
+    from .adapters.hl7v2 import HL7v2Adapter
+    from .adapters.pdf_excel import PdfExcelAdapter
+    from .adapters.ocr import OcrAdapter
     from .adapters.proprietary import ProprietaryAdapter
 
     return {
+        SourceModality.NATIVE_FHIR: NativeFhirAdapter,
+        SourceModality.HL7V2: HL7v2Adapter,
+        SourceModality.PDF_EXCEL: PdfExcelAdapter,
+        SourceModality.OCR: OcrAdapter,
         SourceModality.PROPRIETARY: ProprietaryAdapter,
-        # 02-05 will add:
-        # SourceModality.NATIVE_FHIR: NativeFhirAdapter,
-        # SourceModality.HL7V2:       HL7v2Adapter,
-        # SourceModality.PDF_EXCEL:   PdfExcelAdapter,
-        # SourceModality.OCR:         OcrAdapter,
     }
 
 

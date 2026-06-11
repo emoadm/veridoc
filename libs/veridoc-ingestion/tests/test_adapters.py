@@ -24,7 +24,10 @@ import pytest
 # ---------------------------------------------------------------------------
 
 FIXTURES = pathlib.Path(__file__).parent / "fixtures"
-FHIR_FIXTURES = pathlib.Path(__file__).parent.parent.parent.parent / "veridoc-fhir" / "tests" / "fixtures" / "fhir"
+# Monorepo layout: libs/veridoc-ingestion/tests/ → libs/veridoc-fhir/tests/fixtures/fhir/
+# __file__ parents: [0]=tests, [1]=veridoc-ingestion, [2]=libs, [3]=project-root
+_LIBS_DIR = pathlib.Path(__file__).parents[2]  # libs/
+FHIR_FIXTURES = _LIBS_DIR / "veridoc-fhir" / "tests" / "fixtures" / "fhir"
 HL7_FIXTURES = FIXTURES / "hl7"
 PDF_FIXTURES = FIXTURES / "pdf"
 IMAGE_FIXTURES = FIXTURES / "images"
@@ -61,12 +64,12 @@ class TestNativeFhirAdapter:
         assert isinstance(resources, list), "ingest must return a list"
         assert len(resources) > 0, "must return at least one resource"
 
-        # Each returned item should be a fhir.resources model (has resource_type attr)
+        # Each returned item should be a fhir.resources model (has get_resource_type method)
         for r in resources:
-            assert hasattr(r, "resource_type"), f"Expected FHIR model, got {type(r)}"
+            assert hasattr(r, "get_resource_type"), f"Expected FHIR model, got {type(r)}"
 
         # Must contain at least one Patient
-        resource_types = {r.resource_type for r in resources}
+        resource_types = {r.get_resource_type() for r in resources}
         assert "Patient" in resource_types, "Synthea bundle must include a Patient"
 
     def test_native_fhir_patient_pseudonymized(self):
@@ -89,7 +92,7 @@ class TestNativeFhirAdapter:
         profile = _profile("site-001", SourceModality.NATIVE_FHIR)
         resources = adapter.ingest(payload, profile)
 
-        patients = [r for r in resources if r.resource_type == "Patient"]
+        patients = [r for r in resources if r.get_resource_type() == "Patient"]
         assert patients, "must return at least one Patient"
         patient = patients[0]
         # The patient ID must NOT be the raw UUID from the bundle
@@ -112,12 +115,12 @@ class TestHL7v2Adapter:
 
         resources = adapter.ingest(payload, profile)
 
-        resource_types = [r.resource_type for r in resources]
+        resource_types = [r.get_resource_type() for r in resources]
         assert "Patient" in resource_types, "ADT_A01 must yield a Patient"
         assert "Encounter" in resource_types, "ADT_A01 must yield an Encounter"
 
         # Check PV1.2 'I' → IMP class mapping
-        encounters = [r for r in resources if r.resource_type == "Encounter"]
+        encounters = [r for r in resources if r.get_resource_type() == "Encounter"]
         enc = encounters[0]
         # class is a Coding element in R4B Encounter
         enc_class_code = enc.class_fhir.code if hasattr(enc, "class_fhir") else None
@@ -138,11 +141,11 @@ class TestHL7v2Adapter:
 
         resources = adapter.ingest(payload, profile)
 
-        resource_types = [r.resource_type for r in resources]
+        resource_types = [r.get_resource_type() for r in resources]
         assert "Observation" in resource_types, "ORU_R01 must yield at least one Observation"
         assert "DiagnosticReport" in resource_types, "ORU_R01 must yield a DiagnosticReport"
 
-        observations = [r for r in resources if r.resource_type == "Observation"]
+        observations = [r for r in resources if r.get_resource_type() == "Observation"]
         # 3 OBX in fixture → 3 Observations
         assert len(observations) >= 1, "Must have at least one Observation from OBX"
 
@@ -163,7 +166,7 @@ class TestHL7v2Adapter:
         )
 
         # Verify DiagnosticReport has LOINC from OBR-4
-        reports = [r for r in resources if r.resource_type == "DiagnosticReport"]
+        reports = [r for r in resources if r.get_resource_type() == "DiagnosticReport"]
         dr = reports[0]
         dr_codings = dr.code.coding if (dr.code and dr.code.coding) else []
         assert len(dr_codings) > 0, "DiagnosticReport.code must have at least one coding"
@@ -208,7 +211,7 @@ class TestPseudonymization:
 
         # Neither adapter should return a Patient whose identifier values contain the raw MRN
         for r in hl7_resources:
-            if r.resource_type == "Patient":
+            if r.get_resource_type() == "Patient":
                 identifiers = r.identifier or []
                 for ident in identifiers:
                     assert raw_mrn not in (ident.value or ""), (
@@ -254,7 +257,7 @@ class TestPdfExcelAdapter:
             assert hasattr(r, "resource_type"), f"Expected FHIR model, got {type(r)}"
 
         # Lab report with Creatinine/Sodium/Potassium → Observations expected
-        resource_types = [r.resource_type for r in resources]
+        resource_types = [r.get_resource_type() for r in resources]
         assert "Observation" in resource_types, (
             "Lab PDF must yield at least one Observation"
         )
@@ -271,7 +274,7 @@ class TestPdfExcelAdapter:
 
         raw_mrn = "MRN-SITE001-00042"
         for r in resources:
-            if r.resource_type == "Patient":
+            if r.get_resource_type() == "Patient":
                 identifiers = r.identifier or []
                 for ident in identifiers:
                     assert raw_mrn not in (ident.value or ""), (
@@ -320,7 +323,7 @@ class TestOcrAdapter:
         assert isinstance(resources, list)
         assert len(resources) > 0
 
-        doc_refs = [r for r in resources if r.resource_type == "DocumentReference"]
+        doc_refs = [r for r in resources if r.get_resource_type() == "DocumentReference"]
         assert len(doc_refs) >= 1, "OcrAdapter must produce at least one DocumentReference"
         doc_ref = doc_refs[0]
 
@@ -382,7 +385,7 @@ class TestOcrAdapter:
 
         # conf=0.97 → no flags
         resources_good = _make_adapter(0.97).ingest(payload, profile)
-        doc_good = next(r for r in resources_good if r.resource_type == "DocumentReference")
+        doc_good = next(r for r in resources_good if r.get_resource_type() == "DocumentReference")
         flag_exts_good = [
             e for e in (doc_good.extension or [])
             if e.url == "urn:veridoc:extension:alcoa-legibility-flag"
@@ -393,7 +396,7 @@ class TestOcrAdapter:
 
         # conf=0.90 → legibility-flag only (not escalate)
         resources_flag = _make_adapter(0.90).ingest(payload, profile)
-        doc_flag = next(r for r in resources_flag if r.resource_type == "DocumentReference")
+        doc_flag = next(r for r in resources_flag if r.get_resource_type() == "DocumentReference")
         flag_exts_flag = [
             e for e in (doc_flag.extension or [])
             if e.url == "urn:veridoc:extension:alcoa-legibility-flag"
@@ -408,7 +411,7 @@ class TestOcrAdapter:
 
         # conf=0.80 → both legibility-flag and legibility-escalate
         resources_esc = _make_adapter(0.80).ingest(payload, profile)
-        doc_esc = next(r for r in resources_esc if r.resource_type == "DocumentReference")
+        doc_esc = next(r for r in resources_esc if r.get_resource_type() == "DocumentReference")
         flag_exts_esc = [
             e for e in (doc_esc.extension or [])
             if e.url == "urn:veridoc:extension:alcoa-legibility-flag"

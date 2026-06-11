@@ -23,6 +23,8 @@ veridoc-crypto = { workspace = true }
 veridoc-pseudonym = { workspace = true }
 veridoc-auth = { workspace = true }
 veridoc-tenancy = { workspace = true }
+veridoc-fhir = { workspace = true }
+veridoc-ingestion = { workspace = true }
 
 # Dev dependency group (D-08): pytest (Wave 0 test harness) + ruff (lint/format).
 # Only packages marked APPROVED in docs/validation/PACKAGE-LEGITIMACY.md.

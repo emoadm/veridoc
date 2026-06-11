@@ -1,0 +1,19 @@
+[project]
+name = "veridoc-fhir"
+version = "0.0.0"
+description = "VeriDoc FHIR R4B model layer and MongoDB repository (D-01/D-02/D-03). Wraps fhir.resources R4B sub-package with a typed async repository and FHIR Provenance helpers."
+readme = "README.md"
+requires-python = ">=3.12"
+# fhir.resources — FHIR R4B Pydantic v2 resource models. APPROVED in PACKAGE-LEGITIMACY.md § Phase 02.
+# pymongo — Async MongoDB driver (AsyncMongoClient). Motor deprecated May 2026. APPROVED.
+dependencies = [
+    "fhir.resources>=8.2.0",
+    "pymongo>=4.17.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/veridoc_fhir"]

@@ -1,0 +1,32 @@
+[project]
+name = "veridoc-ingestion"
+version = "0.0.0"
+description = "VeriDoc EMR ingestion adapters: SourceAdapter ABC, SourceProfile registry, OcrEngine, BlobStore, and RQ worker helpers (D-04/D-05/D-06/D-07/D-08/D-09/D-10/D-11/D-12). Converts native FHIR, HL7 v2.x, PDF/Excel, and paper-scanned sources to FHIR R4B via veridoc-fhir."
+readme = "README.md"
+requires-python = ">=3.12"
+# All packages APPROVED in PACKAGE-LEGITIMACY.md § Phase 02.
+# rq — Redis job queue (JSONSerializer; no pickle). rq/rq on PyPI.
+# hl7apy — HL7 v2.x parser (CRS4-official). D-12.
+# pytesseract — Tesseract OCR wrapper (madmaze/pytesseract). D-08. Requires system tesseract-ocr.
+# boto3 — S3-compatible blob client; MinIO via endpoint_url. AWS-official. D-10.
+# openpyxl — Excel (.xlsx) parsing for semi-manual import path.
+# pypdf — PDF text extraction for semi-manual import path.
+dependencies = [
+    "rq>=2.9.1",
+    "hl7apy>=1.3.5",
+    "pytesseract>=0.3.13",
+    "Pillow>=9.0",
+    "boto3>=1.43.0",
+    "openpyxl>=3.1.5",
+    "pypdf>=6.13.0",
+    "veridoc-fhir",
+    "veridoc-pseudonym",
+    "veridoc-audit",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/veridoc_ingestion"]

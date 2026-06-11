@@ -58,3 +58,70 @@ tasks:
     cmds:
       - uv build --all-packages
       - pnpm -r --if-present build
+
+  "deploy:kind":
+    desc: >-
+      Prove the deploy path on a REAL ephemeral kind cluster (D-09, Success Criterion #1).
+      Creates a kind cluster, builds the reference-service image, kind-loads it, creates the
+      named K8s Secrets with EPHEMERAL values (NEVER committed — T-06-01), creates the
+      Keycloak realm ConfigMap from the committed realm JSON (Pitfall 4), helm-installs the
+      provider-portable chart (a REAL install, NOT --dry-run — Anti-Pattern avoided), and
+      waits for Postgres + Keycloak + the reference service to become Ready. Reused by CI
+      (.github/workflows/ci.yml) AND by local devs who have docker/kind/helm/kubectl.
+      Requires: docker, kind, kubectl, helm on PATH (absent on the build host — runs in CI).
+    vars:
+      CLUSTER: '{{.CLUSTER | default "veridoc"}}'
+      IMAGE: '{{.IMAGE | default "veridoc/reference-service:ci"}}'
+      NAMESPACE: '{{.NAMESPACE | default "veridoc"}}'
+      RELEASE: '{{.RELEASE | default "veridoc"}}'
+    cmds:
+      # 1. Ephemeral cluster.
+      - kind create cluster --name "{{.CLUSTER}}" --wait 120s
+      # 2. Build + load the reference-service image (Dockerfile from plan 01-05).
+      - docker build -t "{{.IMAGE}}" -f services/reference-service/Dockerfile .
+      - kind load docker-image "{{.IMAGE}}" --name "{{.CLUSTER}}"
+      - kubectl create namespace "{{.NAMESPACE}}" --dry-run=client -o yaml | kubectl apply -f -
+      # 3. Ephemeral secrets (throwaway, cluster-local — NEVER in git, T-06-01).
+      - >-
+        kubectl -n "{{.NAMESPACE}}" create secret generic veridoc-postgres
+        --from-literal=POSTGRES_USER=veridoc
+        --from-literal=POSTGRES_PASSWORD="$(openssl rand -hex 24)"
+        --from-literal=POSTGRES_DB=veridoc
+        --dry-run=client -o yaml | kubectl apply -f -
+      - >-
+        kubectl -n "{{.NAMESPACE}}" create secret generic veridoc-redis
+        --from-literal=REDIS_PASSWORD="$(openssl rand -hex 24)"
+        --dry-run=client -o yaml | kubectl apply -f -
+      - >-
+        kubectl -n "{{.NAMESPACE}}" create secret generic veridoc-keycloak
+        --from-literal=KEYCLOAK_ADMIN=admin
+        --from-literal=KEYCLOAK_ADMIN_PASSWORD="$(openssl rand -hex 24)"
+        --from-literal=REFERENCE_SERVICE_CLIENT_SECRET="$(openssl rand -hex 32)"
+        --dry-run=client -o yaml | kubectl apply -f -
+      - >-
+        kubectl -n "{{.NAMESPACE}}" create secret generic veridoc-kms
+        --from-literal=VERIDOC_MASTER_KEY="$(openssl rand -hex 32)"
+        --dry-run=client -o yaml | kubectl apply -f -
+      # 4. Realm-as-code ConfigMap from the committed realm JSON (Pitfall 4).
+      - >-
+        kubectl -n "{{.NAMESPACE}}" create configmap veridoc-keycloak-realm
+        --from-file=veridoc-realm.json=deploy/keycloak/veridoc-realm.json
+        --dry-run=client -o yaml | kubectl apply -f -
+      # 5. REAL helm install (NOT --dry-run) — the deploy path is genuinely proven.
+      - >-
+        helm upgrade --install "{{.RELEASE}}" deploy/helm/veridoc
+        --namespace "{{.NAMESPACE}}"
+        --set referenceService.image.repository="$(echo {{.IMAGE}} | cut -d: -f1)"
+        --set referenceService.image.tag="$(echo {{.IMAGE}} | cut -d: -f2)"
+        --wait --timeout 10m
+      # 6. Wait for readiness (the kubectl-wait gate).
+      - kubectl -n "{{.NAMESPACE}}" wait --for=condition=available --timeout=300s deployment/veridoc-postgres
+      - kubectl -n "{{.NAMESPACE}}" wait --for=condition=available --timeout=420s deployment/veridoc-keycloak
+      - kubectl -n "{{.NAMESPACE}}" wait --for=condition=available --timeout=300s deployment/veridoc-reference-service
+
+  "deploy:kind:down":
+    desc: Tear down the ephemeral kind cluster created by deploy:kind.
+    vars:
+      CLUSTER: '{{.CLUSTER | default "veridoc"}}'
+    cmds:
+      - kind delete cluster --name "{{.CLUSTER}}"

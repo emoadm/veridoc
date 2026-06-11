@@ -209,11 +209,11 @@ minio:
     size: 10Gi
 
 # ---------------------------------------------------------------------------- #
-# Ingestion service (D-04) — staged here for 02-07 (Deployment template not yet
-# created; values present so the final wave can reference them without changes).
+# Ingestion service (D-04) — API Deployment + RQ-worker Deployment (same image,
+# different command). Template created in 02-07. Credentials via secretKeyRef.
 # ---------------------------------------------------------------------------- #
 ingestionService:
-  enabled: false
+  enabled: true
   image:
     repository: veridoc/ingestion-service
     tag: "ci"

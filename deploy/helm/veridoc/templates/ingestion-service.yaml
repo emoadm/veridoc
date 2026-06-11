@@ -1,0 +1,241 @@
+{{- if .Values.ingestionService.enabled }}
+{{- $component := "ingestion-service" }}
+{{- $name := include "veridoc.componentName" (dict "component" $component) }}
+{{- $workerComponent := "ingestion-worker" }}
+{{- $workerName := include "veridoc.componentName" (dict "component" $workerComponent) }}
+{{/*
+Ingestion service (D-04) — the FastAPI app built from services/ingestion-service/Dockerfile.
+
+Two Deployments from the same image:
+  1. API Deployment (uvicorn default CMD) + a ClusterIP Service.
+  2. RQ-worker Deployment (rq worker command, no Service, no health port).
+
+Non-secret runtime config (issuer/JWKS/audience/redis/blob endpoint) is set via env
+from values. SECRETS (Mongo creds, MinIO creds) arrive via secretKeyRef — NO plaintext
+secret values in the chart (T-06-01, T-02-DEPLOY-01).
+
+Worker command pins --serializer rq.serializers.JSONSerializer (no pickle in cluster —
+T-02-DEPLOY-02, DEC-rq-json-serializer). VERIDOC_MONGODB_URL is assembled from the
+Mongo Secret components at runtime (creds never inlined — T-02-DEPLOY-01).
+*/}}
+
+# ---------------------------------------------------------------------------- #
+# API Deployment
+# ---------------------------------------------------------------------------- #
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "veridoc.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+spec:
+  replicas: {{ .Values.ingestionService.replicas }}
+  selector:
+    matchLabels:
+      {{- include "veridoc.selectorLabels" (dict "component" $name "root" .) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "veridoc.labels" . | nindent 8 }}
+        {{- include "veridoc.selectorLabels" (dict "component" $name "root" .) | nindent 8 }}
+        app.kubernetes.io/component: {{ $component }}
+    spec:
+      containers:
+        - name: ingestion-service
+          image: "{{ .Values.ingestionService.image.repository }}:{{ .Values.ingestionService.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.ingestionService.port }}
+          env:
+            # Non-secret runtime config (12-factor; matches ingestion_service.config.Settings).
+            - name: VERIDOC_KEYCLOAK_ISSUER
+              value: {{ .Values.ingestionService.config.keycloakIssuer | quote }}
+            - name: VERIDOC_KEYCLOAK_JWKS_URI
+              value: {{ .Values.ingestionService.config.keycloakJwksUri | quote }}
+            - name: VERIDOC_KEYCLOAK_AUDIENCE
+              value: {{ .Values.ingestionService.config.keycloakAudience | quote }}
+            - name: VERIDOC_REDIS_URL
+              value: {{ .Values.ingestionService.config.redisUrl | quote }}
+            - name: VERIDOC_BLOB_ENDPOINT_URL
+              value: {{ .Values.ingestionService.config.blobEndpointUrl | quote }}
+            - name: VERIDOC_BLOB_BUCKET
+              value: {{ .Values.ingestionService.config.blobBucket | quote }}
+            # MongoDB creds from the veridoc-mongodb Secret (T-02-DEPLOY-01 — never inlined).
+            - name: MONGO_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.mongodb.name }}
+                  key: {{ .Values.secrets.mongodb.usernameKey }}
+            - name: MONGO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.mongodb.name }}
+                  key: {{ .Values.secrets.mongodb.passwordKey }}
+            # MONGODB_URL assembled from secret-referenced components (creds never inlined).
+            - name: VERIDOC_MONGODB_URL
+              value: "mongodb://$(MONGO_USER):$(MONGO_PASSWORD)@veridoc-mongodb:{{ .Values.mongodb.port }}/{{ .Values.mongodb.database }}"
+            # MinIO (blob store) creds from the veridoc-minio Secret (T-02-DEPLOY-01).
+            - name: VERIDOC_BLOB_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.minio.name }}
+                  key: {{ .Values.secrets.minio.usernameKey }}
+            - name: VERIDOC_BLOB_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.minio.name }}
+                  key: {{ .Values.secrets.minio.passwordKey }}
+            # Postgres creds (for audit chain — T-06-01).
+            - name: VERIDOC_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.postgres.name }}
+                  key: {{ .Values.secrets.postgres.usernameKey }}
+            - name: VERIDOC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.postgres.name }}
+                  key: {{ .Values.secrets.postgres.passwordKey }}
+            - name: VERIDOC_DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.postgres.name }}
+                  key: {{ .Values.secrets.postgres.databaseKey }}
+            - name: VERIDOC_DATABASE_URL
+              value: "postgresql+psycopg://$(VERIDOC_DB_USER):$(VERIDOC_DB_PASSWORD)@veridoc-postgres:{{ .Values.postgres.port }}/$(VERIDOC_DB_NAME)"
+            # Per-patient master key (veridoc-crypto) from the KMS Secret.
+            - name: VERIDOC_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.kms.name }}
+                  key: {{ .Values.secrets.kms.masterKeyKey }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.ingestionService.healthPath }}
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.ingestionService.healthPath }}
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.ingestionService.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "veridoc.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+spec:
+  selector:
+    {{- include "veridoc.selectorLabels" (dict "component" $name "root" .) | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.ingestionService.port }}
+      targetPort: http
+---
+
+# ---------------------------------------------------------------------------- #
+# RQ-worker Deployment — same image as the API, different command.
+# No Service, no health port. JSONSerializer pins pickle-free deserialization
+# (T-02-DEPLOY-02, DEC-rq-json-serializer).
+# ---------------------------------------------------------------------------- #
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $workerName }}
+  labels:
+    {{- include "veridoc.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ $workerComponent }}
+spec:
+  replicas: {{ .Values.ingestionService.replicas }}
+  selector:
+    matchLabels:
+      {{- include "veridoc.selectorLabels" (dict "component" $workerName "root" .) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "veridoc.labels" . | nindent 8 }}
+        {{- include "veridoc.selectorLabels" (dict "component" $workerName "root" .) | nindent 8 }}
+        app.kubernetes.io/component: {{ $workerComponent }}
+    spec:
+      containers:
+        - name: ingestion-worker
+          image: "{{ .Values.ingestionService.image.repository }}:{{ .Values.ingestionService.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          # RQ worker entrypoint — overrides the default uvicorn CMD (no pickle, T-02-DEPLOY-02).
+          command:
+            - "rq"
+            - "worker"
+            - "ingestion"
+            - "--serializer"
+            - "rq.serializers.JSONSerializer"
+            - "--url"
+            - "$(VERIDOC_REDIS_URL)"
+          env:
+            # Redis URL (worker connects to the same Redis as the API enqueuer).
+            - name: VERIDOC_REDIS_URL
+              value: {{ .Values.ingestionService.config.redisUrl | quote }}
+            # MongoDB creds (worker writes FHIR resources after processing jobs).
+            - name: MONGO_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.mongodb.name }}
+                  key: {{ .Values.secrets.mongodb.usernameKey }}
+            - name: MONGO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.mongodb.name }}
+                  key: {{ .Values.secrets.mongodb.passwordKey }}
+            - name: VERIDOC_MONGODB_URL
+              value: "mongodb://$(MONGO_USER):$(MONGO_PASSWORD)@veridoc-mongodb:{{ .Values.mongodb.port }}/{{ .Values.mongodb.database }}"
+            # Blob store creds (worker fetches original documents from MinIO).
+            - name: VERIDOC_BLOB_ENDPOINT_URL
+              value: {{ .Values.ingestionService.config.blobEndpointUrl | quote }}
+            - name: VERIDOC_BLOB_BUCKET
+              value: {{ .Values.ingestionService.config.blobBucket | quote }}
+            - name: VERIDOC_BLOB_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.minio.name }}
+                  key: {{ .Values.secrets.minio.usernameKey }}
+            - name: VERIDOC_BLOB_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.minio.name }}
+                  key: {{ .Values.secrets.minio.passwordKey }}
+            # Postgres creds (audit chain writes from the worker — D-06).
+            - name: VERIDOC_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.postgres.name }}
+                  key: {{ .Values.secrets.postgres.usernameKey }}
+            - name: VERIDOC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.postgres.name }}
+                  key: {{ .Values.secrets.postgres.passwordKey }}
+            - name: VERIDOC_DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.postgres.name }}
+                  key: {{ .Values.secrets.postgres.databaseKey }}
+            - name: VERIDOC_DATABASE_URL
+              value: "postgresql+psycopg://$(VERIDOC_DB_USER):$(VERIDOC_DB_PASSWORD)@veridoc-postgres:{{ .Values.postgres.port }}/$(VERIDOC_DB_NAME)"
+            # Per-patient master key (veridoc-crypto) from the KMS Secret.
+            - name: VERIDOC_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.kms.name }}
+                  key: {{ .Values.secrets.kms.masterKeyKey }}
+          resources:
+            {{- toYaml .Values.ingestionService.resources | nindent 12 }}
+{{- end }}

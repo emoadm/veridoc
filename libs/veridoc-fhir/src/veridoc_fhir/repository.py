@@ -74,10 +74,19 @@ class FhirRepository:
         declarations (``ensure_index`` semantics).
 
         Indexes created:
-        - ``(resourceType, id)`` — unique; enforces idempotent upsert (T-02-FHIR-04)
+        - ``(resourceType, id)`` — unique; enforces idempotent upsert (T-02-FHIR-04).
+          Identity in this single-collection design is the (resourceType, id) TUPLE,
+          not a bare ``id``; the same ``id`` under different resource types is a
+          distinct logical resource.
         - ``(resourceType, subject.reference)`` — patient resource lookup (SC-1)
         - ``(resourceType, meta.source)`` — provenance source query
-        - ``id`` — single-field for fast resource-type-agnostic ID lookup
+
+        WR-08: the previous standalone non-unique ``id`` index is intentionally
+        NOT created. No query path looks up by bare ``id`` (``save`` filters on the
+        compound key and ``find_by_patient`` on subject.reference), so it was pure
+        write overhead; it also implied a global-id-uniqueness contract that this
+        design does not make (identity is the compound tuple). Dropping it keeps the
+        index contract unambiguous.
         """
         await self._col.create_index(
             [("resourceType", ASCENDING), ("id", ASCENDING)],
@@ -92,7 +101,6 @@ class FhirRepository:
             [("resourceType", ASCENDING), ("meta.source", ASCENDING)],
             name="ix_resourceType_meta_source",
         )
-        await self._col.create_index("id", name="ix_id")
 
     async def save(self, resource) -> str:
         """Upsert a ``fhir.resources.R4B`` model instance into the collection.

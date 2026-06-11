@@ -15,4 +15,12 @@ This module is intentionally thin at Wave 0; it is populated by plans 02-03 thro
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from .adapter import SourceAdapter, SourceModality, SourceProfile
+from .registry import SourceProfileRegistry
+
+__all__ = [
+    "SourceAdapter",
+    "SourceModality",
+    "SourceProfile",
+    "SourceProfileRegistry",
+]

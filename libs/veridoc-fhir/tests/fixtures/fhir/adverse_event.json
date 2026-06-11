@@ -1,0 +1,79 @@
+{
+  "resourceType": "AdverseEvent",
+  "id": "ae-veridoc-edge-case-001",
+  "meta": {
+    "source": "urn:veridoc:fixture:hand-crafted:adverse-event-a7",
+    "tag": [
+      {
+        "system": "urn:veridoc:tag",
+        "code": "synthea-gap",
+        "display": "Synthea gap A7: AdverseEvent not emitted by Synthea; hand-crafted for edge case testing"
+      }
+    ]
+  },
+  "actuality": "actual",
+  "category": [
+    {
+      "coding": [
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/adverse-event-category",
+          "code": "medication-mishap",
+          "display": "Medication Mishap"
+        }
+      ]
+    }
+  ],
+  "event": {
+    "coding": [
+      {
+        "system": "http://snomed.info/sct",
+        "code": "62014003",
+        "display": "Adverse reaction caused by drug"
+      }
+    ]
+  },
+  "subject": {
+    "reference": "Patient/patient-pseudo-ae-001"
+  },
+  "date": "2026-01-15T10:30:00Z",
+  "detected": "2026-01-15T10:30:00Z",
+  "recordedDate": "2026-01-15T11:00:00Z",
+  "severity": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/adverse-event-severity",
+        "code": "moderate",
+        "display": "Moderate"
+      }
+    ]
+  },
+  "suspectEntity": [
+    {
+      "instance": {
+        "reference": "MedicationRequest/medreq-pseudo-001"
+      },
+      "causality": [
+        {
+          "assessment": {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/adverse-event-causality-assess",
+                "code": "probably-likely",
+                "display": "Probably/Likely"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "outcome": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/adverse-event-outcome",
+        "code": "recovering",
+        "display": "Recovering/Resolving"
+      }
+    ]
+  }
+}

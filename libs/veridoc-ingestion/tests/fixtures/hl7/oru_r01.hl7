@@ -1,0 +1,6 @@
+MSH|^~\&|LAB_APP|LAB_FAC|VERIDOC|VERIDOC_FAC|20260115140000||ORU^R01^ORU_R01|MSG00002|P|2.5.1|||NE|AL|USA
+PID|1||MRN-SITE001-00042^^^SITE001^MR||SMITH^JOHN^A||19850612|M|||123 MAIN ST^^SPRINGFIELD^MA^01101^USA
+OBR|1|ORD-001^LAB|FIL-001^LAB|2160-0^Creatinine [Mass/volume] in Serum or Plasma^LN|||20260115133000|||||||||REQ_DOC^^^MD||||||20260115140000|||F
+OBX|1|NM|2160-0^Creatinine [Mass/volume] in Serum or Plasma^LN||0.9|mg/dL^milligrams per deciliter^UCUM|0.7-1.3|N|||F|||20260115140000
+OBX|2|NM|2951-2^Sodium [Moles/volume] in Serum or Plasma^LN||138|mmol/L^millimoles per liter^UCUM|136-145|N|||F|||20260115140000
+OBX|3|NM|2823-3^Potassium [Moles/volume] in Serum or Plasma^LN||4.1|mmol/L^millimoles per liter^UCUM|3.5-5.0|N|||F|||20260115140000

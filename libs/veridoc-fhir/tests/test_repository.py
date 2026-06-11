@@ -25,14 +25,22 @@ class TestRepositorySourceCode:
 
     def test_uses_asyncmongoclient_not_motor(self):
         """FhirRepository MUST use AsyncMongoClient — motor is deprecated (Pitfall 2)."""
+        import veridoc_fhir.repository as repo_module
         from veridoc_fhir.repository import FhirRepository
 
         source = inspect.getsource(FhirRepository)
         assert "AsyncMongoClient" in source, (
             "FhirRepository must use pymongo.AsyncMongoClient"
         )
-        assert "motor" not in source, (
-            "FhirRepository must NOT use motor — it is deprecated (EOL 2026-05-14)"
+        # Check that motor is not imported at the module level (not just mentioned in comments)
+        module_source = inspect.getsource(repo_module)
+        import_lines = [
+            ln for ln in module_source.splitlines()
+            if ln.strip().startswith("import ") or ln.strip().startswith("from ")
+        ]
+        motor_imports = [ln for ln in import_lines if "motor" in ln]
+        assert not motor_imports, (
+            f"motor is imported — must NOT use motor (EOL 2026-05-14): {motor_imports}"
         )
 
     def test_create_index_present_in_source(self):

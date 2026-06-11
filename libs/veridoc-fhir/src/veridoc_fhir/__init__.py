@@ -36,6 +36,7 @@ from .models import (
     Provenance,
 )
 from .provenance import create_provenance
+from .repository import FhirRepository
 
 __all__ = [
     # FHIR R4B resource types (D-01)
@@ -49,6 +50,8 @@ __all__ = [
     "DocumentReference",
     "Procedure",
     "Provenance",
+    # MongoDB repository (D-02)
+    "FhirRepository",
     # Provenance factory (D-03)
     "create_provenance",
     # Extension URL constants

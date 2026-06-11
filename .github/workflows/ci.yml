@@ -87,8 +87,11 @@ jobs:
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Install workspace dependencies
-        run: task install
+      # Integration tests are Python-only (DB-backed pytest) — no JS workspace needed,
+      # so sync just the uv environment instead of the full `task install` (which also
+      # runs `pnpm install`).
+      - name: Sync Python deps
+        run: uv sync --all-packages
       # Docker is preinstalled on ubuntu-latest, so testcontainers spins an ephemeral
       # Postgres (+ Keycloak for the reference-service suite) for the DB-backed tests.
       - name: Integration tests

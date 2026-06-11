@@ -32,6 +32,8 @@ method-per-operation discipline).
 
 from __future__ import annotations
 
+import uuid
+
 from pymongo import AsyncMongoClient, IndexModel, ASCENDING
 
 __all__ = ["FhirRepository"]
@@ -108,17 +110,26 @@ class FhirRepository:
             The MongoDB ``_id`` as a string (upserted or replaced document ID).
         """
         doc = resource.model_dump()
-        # Ensure both dot-notation key and top-level key are consistent
+        # CR-02: fhir.resources omits ``id`` from model_dump() when it is None
+        # (e.g. a Provenance built by create_provenance). Keying the upsert on
+        # ``doc["id"]`` would then raise KeyError and abort the ingest job after
+        # clinical resources were already persisted. Assign a stable UUID id when
+        # absent and persist it, so every document is addressable and the upsert
+        # filter is always well-formed.
+        res_id = doc.get("id")
+        if res_id is None:
+            res_id = str(uuid.uuid4())
+            doc["id"] = res_id
         # resourceType comes directly from model_dump() — cannot be injected
         result = await self._col.replace_one(
             {
                 "resourceType": doc["resourceType"],
-                "id": doc["id"],
+                "id": res_id,
             },
             doc,
             upsert=True,
         )
-        return str(result.upserted_id or doc.get("id", ""))
+        return str(result.upserted_id or res_id)
 
     async def find_by_patient(
         self, patient_id: str, resource_type: str

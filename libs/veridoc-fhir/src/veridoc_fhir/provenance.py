@@ -25,6 +25,7 @@ Analogue: ``services/reference-service/src/reference_service/api/subjects.py``
 
 from __future__ import annotations
 
+import uuid
 from datetime import datetime, timezone
 
 from fhir.resources.R4B.provenance import Provenance
@@ -87,6 +88,10 @@ def create_provenance(
 
     return Provenance.model_validate({
         "resourceType": "Provenance",
+        # CR-02: assign a stable id so the Provenance is addressable and so
+        # FhirRepository.save() can key its upsert filter on (resourceType, id)
+        # without a KeyError. fhir.resources omits a None id from model_dump().
+        "id": str(uuid.uuid4()),
         "meta": {
             "source": source,
         },

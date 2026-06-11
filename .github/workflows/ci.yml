@@ -128,6 +128,24 @@ jobs:
       # kind cluster and a `kubectl wait` for Postgres/Keycloak/reference-service readiness.
       - name: Deploy to ephemeral kind (real helm install — not dry-run)
         run: task deploy:kind
+      # If `helm --wait` times out, surface WHY: pod status, events, and per-deployment
+      # logs (current + previous container) for the whole namespace.
+      - name: Diagnose deploy failure
+        if: failure()
+        run: |
+          set +e
+          echo "=== pods ==="
+          kubectl get pods -n veridoc -o wide
+          echo "=== events (chronological) ==="
+          kubectl get events -n veridoc --sort-by=.lastTimestamp
+          echo "=== describe pods ==="
+          kubectl describe pods -n veridoc
+          for d in veridoc-postgres veridoc-redis veridoc-keycloak veridoc-reference-service; do
+            echo "=== logs: $d (current) ==="
+            kubectl logs -n veridoc "deployment/$d" --all-containers --tail=200
+            echo "=== logs: $d (previous, if any) ==="
+            kubectl logs -n veridoc "deployment/$d" --all-containers --previous --tail=200
+          done
       - name: Run tamper-detection phase gate against the deployed Postgres
         run: |
           set -euo pipefail

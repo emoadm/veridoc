@@ -59,8 +59,8 @@ model, ready for agents to verify.
 **Plans**: 7 plans in 5 waves
 - [x] 02-01-PLAN.md — Package-legitimacy gate + new-lib registration + Wave 0 fixtures/conftests (Synthea, HL7, PDF, images, Mongo/MinIO testcontainers)
 - [x] 02-02-PLAN.md — Deploy infra: MongoDB + MinIO Helm Deployments + values + secret refs (D-02/D-10)
-- [ ] 02-03-PLAN.md — veridoc-fhir lib: R4B model facade + FhirRepository (Mongo) + spec-native Provenance (D-01/D-02/D-03)
-- [ ] 02-04-PLAN.md — veridoc-ingestion abstractions: SourceAdapter/registry + OcrEngine + BlobStore + proprietary stub (D-05/D-07/D-08/D-10/D-11)
+- [x] 02-03-PLAN.md — veridoc-fhir lib: R4B model facade + FhirRepository (Mongo) + spec-native Provenance (D-01/D-02/D-03)
+- [x] 02-04-PLAN.md — veridoc-ingestion abstractions: SourceAdapter/registry + OcrEngine + BlobStore + proprietary stub (D-05/D-07/D-08/D-10/D-11)
 - [ ] 02-05-PLAN.md — Four adapters + HL7→FHIR mapping + rule-based extraction, pseudonymized at ingestion (D-09/D-11/D-12/D-14)
 - [ ] 02-06-PLAN.md — ingestion-service (FastAPI ingest + RQ worker, D-06 worker-owned audit) + Tesseract Dockerfile (D-04/D-06)
 - [ ] 02-07-PLAN.md — Deploy wiring: ingestion-service + RQ-worker Helm Deployments + CI tesseract/testcontainers + kind ingest smoke test
@@ -145,7 +145,7 @@ trail out — verifiable end-to-end.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Platform Skeleton & Audit Foundation | 6/6 | Complete   | 2026-06-11 |
-| 2. FHIR R4 Model & EMR Ingestion | 2/7 | In Progress|  |
+| 2. FHIR R4 Model & EMR Ingestion | 4/7 | In Progress|  |
 | 3. Medidata Rave Mock Integration | 0/0 | Not started | - |
 | 4. Multi-Agent Framework & Orchestrator | 0/0 | Not started | - |
 | 5. Core Verification Agents | 0/0 | Not started | - |

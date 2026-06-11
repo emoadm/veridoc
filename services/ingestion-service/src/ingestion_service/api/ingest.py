@@ -25,6 +25,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Request
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from veridoc_audit import AuditEvent, append_audit
@@ -74,6 +75,35 @@ class IngestResponse(BaseModel):
     job_id: str
 
 
+def _resolve_modality(request: Request, site_id: str) -> str:
+    """Resolve the real ingestion modality for ``site_id`` from the site registry.
+
+    CR-04 / WR-03: the modality MUST come from the site's registered
+    ``SourceProfile`` — never a hardcoded default — so HL7/PDF/OCR sites route to
+    the correct adapter. A site with no registered profile is rejected with HTTP
+    400 (fail-closed) rather than silently defaulted to native-FHIR.
+
+    Returns the modality slug string (e.g. ``"hl7v2"``) for JSON-safe enqueue.
+    """
+    from fastapi import HTTPException
+
+    registry = getattr(request.app.state, "source_registry", None)
+    if registry is None:
+        raise HTTPException(
+            status_code=503,
+            detail="ingest source registry is not initialised",
+        )
+    try:
+        profile = registry.get(site_id)
+    except LookupError as exc:
+        # Unknown site → fail closed (do not guess a modality / adapter).
+        raise HTTPException(
+            status_code=400,
+            detail=f"no ingest source profile registered for site_id={site_id!r}",
+        ) from exc
+    return str(profile.modality.value)
+
+
 def _primary_role(principal: Principal) -> str:
     """The single role recorded on the audit row."""
     for role in _WRITE_ROLES:
@@ -83,7 +113,7 @@ def _primary_role(principal: Principal) -> str:
 
 
 @router.post("/{site_id}", response_model=IngestResponse, status_code=202)
-def post_ingest(
+async def post_ingest(
     site_id: str,
     request: Request,
     principal: Principal = Depends(require_write_role),
@@ -108,12 +138,16 @@ def post_ingest(
     tenant = current_tenant()
     tenant_id = f"{tenant.site}/{tenant.study}"
 
-    # Read the raw payload from the request body
-    payload_bytes: bytes = request.scope.get("_body", b"")
-    if not payload_bytes:
-        # Read synchronously (FastAPI sync handler — body is available in scope)
-        import asyncio
-        payload_bytes = asyncio.get_event_loop().run_until_complete(request.body())
+    # Resolve the REAL ingestion modality for this site from the registered
+    # SourceProfile (CR-04). The API must NOT hardcode "native-fhir": HL7/PDF/OCR
+    # sites would otherwise be routed to the wrong adapter. A site with no
+    # registered profile is rejected (fail-closed; WR-03) rather than defaulted.
+    modality = _resolve_modality(request, site_id)
+
+    # Read the raw payload from the request body. The handler is async, so the
+    # body is awaited directly (CR-01: never read it via request.scope or an
+    # event-loop hack inside a threadpool — both are broken/unsafe).
+    payload_bytes: bytes = await request.body()
 
     # Store the original payload to the blob store (Pitfall 4: blob key is JSON-serializable)
     blob_endpoint_url: str | None = getattr(request.app.state, "blob_endpoint_url", None)
@@ -133,7 +167,9 @@ def post_ingest(
             secret_key=blob_secret_key,
         )
         content_type = request.headers.get("Content-Type", "application/octet-stream")
-        blob_store.put(payload_key, payload_bytes, content_type)
+        # boto3 .put is blocking I/O — offload to the threadpool so it does not
+        # block the event loop (CR-01: async handler must not run sync I/O inline).
+        await run_in_threadpool(blob_store.put, payload_key, payload_bytes, content_type)
 
     # Enqueue the RQ ingest job (all args JSON-serializable — Pitfall 4 / T-02-SVC-03)
     queue = getattr(request.app.state, "rq_queue", None)
@@ -141,43 +177,52 @@ def post_ingest(
 
     if queue is not None:
         from veridoc_ingestion.worker import ingest_job
-        job = queue.enqueue(
-            ingest_job,
-            site_id=site_id,
-            modality="native-fhir",  # default; site registry resolves real modality at worker
-            payload_key=payload_key,
-            tenant_id=tenant_id,
-            actor_id=principal.subject,
-            blob_endpoint_url=blob_endpoint_url,
-            blob_bucket=blob_bucket,
-            blob_access_key=blob_access_key,
-            blob_secret_key=blob_secret_key,
-            job_timeout=300,
-            result_ttl=3600,
-        )
-        job_id = job.id
+
+        def _enqueue() -> str:
+            job = queue.enqueue(
+                ingest_job,
+                site_id=site_id,
+                modality=modality,  # resolved from the site's SourceProfile (CR-04)
+                payload_key=payload_key,
+                tenant_id=tenant_id,
+                actor_id=principal.subject,
+                blob_endpoint_url=blob_endpoint_url,
+                blob_bucket=blob_bucket,
+                blob_access_key=blob_access_key,
+                blob_secret_key=blob_secret_key,
+                job_timeout=300,
+                result_ttl=3600,
+            )
+            return job.id
+
+        # Redis enqueue is blocking I/O — offload from the event loop (CR-01).
+        job_id = await run_in_threadpool(_enqueue)
     # If queue is None (unit test without Redis), return a generated job_id
 
     # Same-transaction "ingest:enqueued" audit event (D-05: atomic with the handler).
     # Distinct from the worker's "ingest:completed" event (T-02-SVC-04 / D-06).
-    append_audit(
-        session,
-        AuditEvent(
-            actor_id=principal.subject,
-            actor_role=_primary_role(principal),
-            tenant_id=tenant_id,
-            action="ingest:enqueued",
-            entity_type="ingest-request",
-            entity_id=job_id,
-            before=None,
-            after={
-                "site_id": site_id,
-                "payload_key": payload_key,
-                "job_id": job_id,
-            },
-            occurred_at=datetime.now(UTC),
-        ),
-    )
-    session.commit()  # business enqueue + audit row are atomic (D-05)
+    def _write_audit_and_commit() -> None:
+        append_audit(
+            session,
+            AuditEvent(
+                actor_id=principal.subject,
+                actor_role=_primary_role(principal),
+                tenant_id=tenant_id,
+                action="ingest:enqueued",
+                entity_type="ingest-request",
+                entity_id=job_id,
+                before=None,
+                after={
+                    "site_id": site_id,
+                    "payload_key": payload_key,
+                    "job_id": job_id,
+                },
+                occurred_at=datetime.now(UTC),
+            ),
+        )
+        session.commit()  # business enqueue + audit row are atomic (D-05)
+
+    # SQLAlchemy session work is blocking — offload from the event loop (CR-01).
+    await run_in_threadpool(_write_audit_and_commit)
 
     return IngestResponse(job_id=job_id)

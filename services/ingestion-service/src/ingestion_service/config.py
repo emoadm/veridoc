@@ -71,6 +71,16 @@ class Settings(BaseSettings):
     blob_access_key: str = Field(default="")
     blob_secret_key: str = Field(default="")
 
+    # Per-site ingestion modality routing (CR-04). Maps ``site_id`` → modality slug
+    # (one of native-fhir / hl7v2 / pdf-excel / ocr / proprietary). Populated into a
+    # ``SourceProfileRegistry`` at startup so the API resolves the REAL adapter per
+    # site rather than hardcoding "native-fhir". Sourced from env
+    # ``VERIDOC_SITE_MODALITIES`` as JSON, e.g. ``{"site-001": "hl7v2"}``.
+    site_modalities: dict[str, str] = Field(
+        default_factory=dict,
+        description="Map of site_id → ingestion modality slug (CR-04 routing).",
+    )
+
 
 @lru_cache
 def get_settings() -> Settings:

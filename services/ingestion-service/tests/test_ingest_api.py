@@ -147,6 +147,12 @@ def make_token(keypair):
 # App fixture (ingestion-service create_app wired to test DB + test JWKS)
 # ---------------------------------------------------------------------------
 
+def _test_settings():
+    """Settings with site-001 registered as a native-fhir source (CR-04 routing)."""
+    from ingestion_service.config import Settings
+    return Settings(site_modalities={"site-001": "native-fhir"})
+
+
 @pytest.fixture()
 def app(migrated_engine, jwks):
     """FastAPI app bound to migrated test DB + in-process JWKS. No Redis needed for unit tests."""
@@ -156,6 +162,7 @@ def app(migrated_engine, jwks):
         jwks=jwks,
         issuer=ISSUER,
         audience=AUDIENCE,
+        settings=_test_settings(),
     )
 
 
@@ -262,7 +269,10 @@ def test_post_ingest_enqueued_audit_event(migrated_engine, jwks, make_token):
     from ingestion_service.main import create_app
     from fastapi.testclient import TestClient
 
-    app = create_app(engine=migrated_engine, jwks=jwks, issuer=ISSUER, audience=AUDIENCE)
+    app = create_app(
+        engine=migrated_engine, jwks=jwks, issuer=ISSUER, audience=AUDIENCE,
+        settings=_test_settings(),
+    )
     token = make_token(sub="audit-user", roles=["site-coordinator"], site="site-001", study="study-A")
     payload = b'{"resourceType": "Bundle", "type": "transaction", "entry": []}'
 

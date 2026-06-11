@@ -122,6 +122,22 @@ def create_app(
         app.state.blob_access_key = settings.blob_access_key
         app.state.blob_secret_key = settings.blob_secret_key
 
+        # Per-site SourceProfileRegistry — the API resolves the REAL ingestion
+        # modality per site from here (CR-04), never a hardcoded default.
+        from veridoc_ingestion.adapter import SourceModality, SourceProfile
+        from veridoc_ingestion.registry import SourceProfileRegistry
+
+        registry = SourceProfileRegistry()
+        for site_id, modality_slug in settings.site_modalities.items():
+            registry.register(
+                SourceProfile(
+                    site_id=site_id,
+                    modality=SourceModality(modality_slug),
+                    config={},
+                )
+            )
+        app.state.source_registry = registry
+
         yield
 
         # Teardown: close the MongoDB client

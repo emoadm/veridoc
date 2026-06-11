@@ -39,7 +39,7 @@ Usage::
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 __all__ = ["map_adt_a01_to_fhir", "map_oru_r01_to_fhir"]
 
@@ -53,23 +53,50 @@ _PV1_CLASS_MAP: dict[str, str] = {
 
 
 def _parse_hl7_datetime(value: str) -> str:
-    """Convert HL7 DTM (YYYYMMDDHHmmSS) to ISO 8601 UTC string.
+    """Convert an HL7 DTM (``YYYYMMDDHHMMSS[+/-ZZZZ]``) to an ISO 8601 string.
+
+    WR-05: parse with explicit, known field lengths (14/12/8 chars) rather than a
+    fragile ``len(fmt.replace("%","XX"))`` heuristic, and honor any trailing
+    ``+/-ZZZZ`` timezone offset present in the DTM instead of forcing UTC (HL7 DTMs
+    are usually local facility times; forcing UTC can shift the timestamp by hours,
+    breaking ALCOA "Contemporaneous"). When no offset is present, UTC is assumed.
 
     Args:
-        value: HL7 datetime string (YYYYMMDDHHMMSS or subset).
+        value: HL7 datetime string (``YYYYMMDDHHMMSS`` or a shorter subset,
+               optionally suffixed with a ``+HHMM`` / ``-HHMM`` offset).
 
     Returns:
-        ISO 8601 string, timezone-aware (UTC assumed for HL7 local times).
+        ISO 8601 string, timezone-aware.
     """
     if not value:
         return datetime.now(timezone.utc).isoformat()
-    formats = ["%Y%m%d%H%M%S", "%Y%m%d%H%M", "%Y%m%d"]
-    for fmt in formats:
-        try:
-            dt = datetime.strptime(value[:len(fmt.replace("%", "XX"))], fmt)
-            return dt.replace(tzinfo=timezone.utc).isoformat()
-        except ValueError:
-            continue
+
+    # Split off an explicit +/-HHMM timezone offset if present.
+    tz = timezone.utc
+    body = value
+    for sign in ("+", "-"):
+        idx = value.find(sign, 1)  # skip a possible leading sign at index 0
+        if idx != -1:
+            body = value[:idx]
+            offset_raw = value[idx:]  # e.g. "+0530"
+            try:
+                sign_mult = 1 if offset_raw[0] == "+" else -1
+                oh = int(offset_raw[1:3])
+                om = int(offset_raw[3:5]) if len(offset_raw) >= 5 else 0
+                tz = timezone(sign_mult * timedelta(hours=oh, minutes=om))
+            except (ValueError, IndexError):
+                tz = timezone.utc  # malformed offset → assume UTC
+            break
+
+    # Map exact body length → strptime format (no slicing-by-format-substitution).
+    by_length = {14: "%Y%m%d%H%M%S", 12: "%Y%m%d%H%M", 8: "%Y%m%d"}
+    for length, fmt in by_length.items():
+        if len(body) >= length:
+            try:
+                dt = datetime.strptime(body[:length], fmt)
+                return dt.replace(tzinfo=tz).isoformat()
+            except ValueError:
+                continue
     return datetime.now(timezone.utc).isoformat()
 
 

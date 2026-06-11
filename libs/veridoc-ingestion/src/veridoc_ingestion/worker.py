@@ -131,10 +131,11 @@ async def _async_ingest(
     # 2. Resolve the adapter via the registry
     #    Build a transient registry with the job's site profile (the service-level registry
     #    is not shared with forked workers — workers reconstruct what they need).
-    try:
-        mod = SourceModality(modality)
-    except ValueError:
-        mod = SourceModality.NATIVE_FHIR  # safe fallback for unknown modalities
+    #    WR-03: fail CLOSED on an unrecognized modality. Do NOT fall back to native
+    #    FHIR — that would run the wrong parser on PHI bytes and mask routing bugs.
+    #    An invalid modality string raises ValueError, which RQ records as a failed
+    #    job (dead-letter) rather than silently mis-ingesting.
+    mod = SourceModality(modality)
 
     profile = SourceProfile(site_id=site_id, modality=mod, config={})
     registry = SourceProfileRegistry()
@@ -144,46 +145,49 @@ async def _async_ingest(
     # 3. Run the adapter (sync; adapters are not async)
     resources = adapter.ingest(payload_bytes, profile)
 
-    # 4. Persist resources to MongoDB
+    # 4. Persist resources to MongoDB.
+    #    WR-02: wrap repo usage in try/finally so the AsyncMongoClient is always
+    #    closed — an exception mid-batch must not leak the client/connection.
     repo = FhirRepository(mongo_url=mongo_url)
-    await repo.create_indexes()
+    try:
+        await repo.create_indexes()
 
-    resource_ids: list[str] = []
-    patient_id: str | None = None
+        resource_ids: list[str] = []
+        patient_id: str | None = None
 
-    for resource in resources:
-        rid = await repo.save(resource)
-        resource_ids.append(rid)
-        # Track patient_id for Provenance target ref.
-        # CR-03: fhir.resources models expose the classmethod get_resource_type();
-        # there is no `resource_type` attribute (AttributeError otherwise).
-        if resource.get_resource_type() == "Patient" and patient_id is None:
-            patient_id = resource.id or rid
+        for resource in resources:
+            rid = await repo.save(resource)
+            resource_ids.append(rid)
+            # Track patient_id for Provenance target ref.
+            # CR-03: fhir.resources models expose the classmethod get_resource_type();
+            # there is no `resource_type` attribute (AttributeError otherwise).
+            if resource.get_resource_type() == "Patient" and patient_id is None:
+                patient_id = resource.id or rid
 
-    # 5. Create and persist a Provenance resource for this ingest batch
-    target_ref = f"Patient/{patient_id}" if patient_id else f"Batch/{site_id}"
-    source_urn = f"urn:veridoc:source:{modality}:{site_id}"
-    provenance = create_provenance(
-        target_ref=target_ref,
-        source=source_urn,
-        ingestion_path=modality,
-        actor_ref="Device/ingestion-service",
-    )
-    provenance_id = await repo.save(provenance)
-    resource_ids.append(provenance_id)
+        # 5. Create and persist a Provenance resource for this ingest batch
+        target_ref = f"Patient/{patient_id}" if patient_id else f"Batch/{site_id}"
+        source_urn = f"urn:veridoc:source:{modality}:{site_id}"
+        provenance = create_provenance(
+            target_ref=target_ref,
+            source=source_urn,
+            ingestion_path=modality,
+            actor_ref="Device/ingestion-service",
+        )
+        provenance_id = await repo.save(provenance)
+        resource_ids.append(provenance_id)
 
-    # 6. Retain the original to blob (already in blob store — retain is a no-op here;
-    #    the payload_key IS the retention key pointing to the original)
-    # Note: the original was stored by the API handler before enqueuing; the worker only
-    # fetches and processes it. This fulfils the "retain the original" requirement.
+        # 6. Retain the original to blob (already in blob store — retain is a no-op
+        #    here; the payload_key IS the retention key pointing to the original).
+        #    The original was stored by the API handler before enqueuing; the worker
+        #    only fetches and processes it (fulfils "retain the original").
 
-    repo.close()
-
-    return {
-        "resource_ids": resource_ids,
-        "provenance_id": provenance_id,
-        "patient_id": patient_id,
-    }
+        return {
+            "resource_ids": resource_ids,
+            "provenance_id": provenance_id,
+            "patient_id": patient_id,
+        }
+    finally:
+        repo.close()
 
 
 def ingest_job(

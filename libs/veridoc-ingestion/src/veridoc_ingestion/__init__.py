@@ -15,4 +15,19 @@ This module is intentionally thin at Wave 0; it is populated by plans 02-03 thro
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from .adapter import SourceAdapter, SourceModality, SourceProfile
+from .blob_store import BlobStore, S3BlobStore
+from .ocr_engine import OcrEngine, OcrResult, TesseractEngine
+from .registry import SourceProfileRegistry
+
+__all__ = [
+    "SourceAdapter",
+    "SourceModality",
+    "SourceProfile",
+    "SourceProfileRegistry",
+    "OcrEngine",
+    "OcrResult",
+    "TesseractEngine",
+    "BlobStore",
+    "S3BlobStore",
+]

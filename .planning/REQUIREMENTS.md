@@ -201,7 +201,7 @@ is parallel/non-blocking; production access is deferred).
 | PLAT-01 | Phase 1 | Complete |
 | PLAT-02 | Phase 1 | Complete |
 | PLAT-03 | Phase 1 | Complete (PII field-encryption + pseudonymization in 01-03; 8-role RBAC + OIDC/MFA + fail-closed tenancy + Keycloak realm-as-code in 01-04) |
-| EMR-01 | Phase 2 | Pending |
+| EMR-01 | Phase 2 | Complete |
 | RAVE-01 | Phase 3 | Pending |
 | AGENT-00 | Phase 4 | Pending |
 | SDV-01 | Phase 5 | Pending |

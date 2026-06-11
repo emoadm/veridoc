@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
 status: executing
-stopped_at: "02-01 Task 1 checkpoint — awaiting human package legitimacy review (T-02-SC)"
-last_updated: "2026-06-11T10:59:39Z"
+stopped_at: "02-01 COMPLETE — advancing to 02-02"
+last_updated: "2026-06-11T18:45:09Z"
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 13
-  completed_plans: 6
-  percent: 13
+  completed_plans: 7
+  percent: 54
 ---
 
 # VeriDoc AI — Project State
@@ -34,18 +34,19 @@ Project memory. Updated as work progresses.
 ## Current Position
 
 Phase: 02 (fhir-r4-model-emr-ingestion) — EXECUTING
-Plan: 1 of 7
+Plan: 2 of 7
 
 - **Phase:** 1 — Platform Skeleton & Audit Foundation (COMPLETE)
-- **Plan:** 01-06 COMPLETE — provider-portable deploy path proven for real (PLAT-01): Helm chart (Keycloak realm-import + Postgres + Redis + reference service) + thin Terraform + secrets contract, and a GitHub Actions pipeline that lint→test→builds the image→spins an EPHEMERAL kind cluster→REAL `helm install`→`kubectl wait`→runs the tamper-detection phase gate (`test_mutated_row_breaks_chain`) against the deployed Postgres→tears down. Full pipeline green in GitHub Actions; secrets name-referenced + ephemeral (no git bytes, T-06-01). CI surfaced + fixed 4 latent defects (pnpm-less integration job, psycopg2 URL driver, Keycloak `_comment_*` realm-import crash, deploy diagnostics). Phase 1 COMPLETE — skeleton, audit chain, identity/RBAC, PII protection, and proven deploy path all green.
-- **Status:** Executing Phase 02
-- **Progress:** Phase 1/8 complete; plans 6/6 in phase 01
-  `[██████████] 100%`
+- **Plan:** 02-01 COMPLETE — Wave 0 foundation: veridoc-fhir + veridoc-ingestion libs registered,
+  all 9 Phase 02 packages installed, Synthea R4B fixtures + AdverseEvent + HL7/PDF/image fixtures
+  committed, Mongo/MinIO testcontainer conftests wired.
+- **Status:** Executing Phase 02 (Plan 1 of 7 COMPLETE, advancing to Plan 2)
+- **Progress:** [█████░░░░░] 54%
 
 ## Performance Metrics
 
-- Phases complete: 0/8
-- Plans complete: 5/6 (phase 01)
+- Phases complete: 1/8
+- Plans complete: 7/13 (6 phase 01 + 1 phase 02)
 - Requirements mapped: 16/16 (100%)
 - Orphaned requirements: 0
 
@@ -56,6 +57,7 @@ Plan: 1 of 7
 | 01 | 03 | ~30min | 3 | 13 |
 | 01 | 04 | ~25min | 3 | 18 |
 | 01 | 05 | ~55min | 3 | 24 |
+| 02 | 01 | ~25min | 3 | 22 |
 
 ## Accumulated Context
 
@@ -117,6 +119,21 @@ Plan: 1 of 7
   closed). No plaintext secrets — client secret is a placeholder resolved from a K8s Secret at
   deploy (01-06). RBAC-MATRIX.md is the 8-role permission-matrix validation evidence.
 
+- DEC-pymongo-asyncclient (02-01) — Use pymongo AsyncMongoClient for MongoDB; motor is EOL
+  2026-05-14. motor explicitly excluded from uv.lock (T-02-01). APPROVED in PACKAGE-LEGITIMACY.md.
+
+- DEC-fhir-r4b-subpackage (02-01) — Always import via `fhir.resources.R4B.*`; top-level
+  `fhir.resources.*` resolves to R5 since v7.0.0. All 9 resource types in scope (Patient,
+  Encounter, Observation, Condition, MedicationRequest, AdverseEvent, DiagnosticReport,
+  DocumentReference, Procedure) use the R4B sub-package.
+
+- DEC-synthea-seed42 (02-01) — Synthea fixtures use `-s 42 --exporter.fhir.use_us_core_ig=false`
+  for reproducible R4B bundles. Pitfall 7: US Core IG disabled; R4B-strict-only validation.
+  5 Synthea bundles + hand-crafted AdverseEvent (gap A7) committed as test fixtures.
+
+- DEC-rq-json-serializer (02-01) — RQ job queue uses JSONSerializer; pickle explicitly excluded
+  (RCE risk). All `ingest_job` arguments must be JSON-serializable primitives (no raw bytes).
+
 ### Open decisions
 
 - DEC-cloud-provider — AWS vs Azure UNDECIDED. Keep IaC provider-portable until decided.
@@ -152,13 +169,14 @@ Plan: 1 of 7
 
 ## Session Continuity
 
-- **Last action:** Executed plan 02-01 Task 1 (package-legitimacy gate). Appended Phase 02
-  section to docs/validation/PACKAGE-LEGITIMACY.md with 9 rows (fhir.resources, pymongo, rq,
-  hl7apy, pytesseract, Pillow, boto3, openpyxl, pypdf) — Verdict cells left BLANK for human
-  review per T-02-SC / DEC-supply-chain-gate. Commit 56679f2. No uv add has run.
+- **Last action:** Completed 02-01-PLAN.md — Wave 0 foundation: veridoc-fhir + veridoc-ingestion
+  libs registered as uv workspace members, all 9 Phase 02 packages installed and importable, 5
+  Synthea R4B transaction Bundle fixtures committed + hand-crafted AdverseEvent, HL7/PDF/image
+  fixtures hand-crafted, Mongo/MinIO testcontainer conftests created. Commits: c00b9aa (T2),
+  1adae2e (T3). SUMMARY at .planning/phases/02-fhir-r4-model-emr-ingestion/02-01-SUMMARY.md.
 
-- **Next action:** After human fills in all 9 verdicts and types "approved", resume 02-01 at
-  Task 2 (register veridoc-fhir + veridoc-ingestion libs + uv sync) then Task 3 (fixtures + conftests).
+- **Next action:** Plan 02-02 — FHIR R4B model layer (models.py, repository.py, provenance.py,
+  extensions.py) building on the fixtures and libs registered in 02-01.
 
-- **Stopped at:** 02-01 Task 1 checkpoint — awaiting human package-legitimacy review (T-02-SC gate). Human must fill in Verified version + Verdict for all 9 rows in docs/validation/PACKAGE-LEGITIMACY.md § Phase 02, then type "approved".
-- **Resume file:** .planning/phases/02-fhir-r4-model-emr-ingestion/02-01-PLAN.md (resume at Task 2 after "approved" signal)
+- **Stopped at:** 02-01 COMPLETE — proceeding to 02-02
+- **Resume file:** .planning/phases/02-fhir-r4-model-emr-ingestion/02-02-PLAN.md

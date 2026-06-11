@@ -57,7 +57,7 @@ model, ready for agents to verify.
   3. A scanned/paper document is OCR + NLP extracted into a FHIR DocumentReference with an OCR confidence score attached.
   4. Patient-identifiable fields are pseudonymized at ingestion time.
 **Plans**: 7 plans in 5 waves
-- [ ] 02-01-PLAN.md — Package-legitimacy gate + new-lib registration + Wave 0 fixtures/conftests (Synthea, HL7, PDF, images, Mongo/MinIO testcontainers)
+- [x] 02-01-PLAN.md — Package-legitimacy gate + new-lib registration + Wave 0 fixtures/conftests (Synthea, HL7, PDF, images, Mongo/MinIO testcontainers)
 - [ ] 02-02-PLAN.md — Deploy infra: MongoDB + MinIO Helm Deployments + values + secret refs (D-02/D-10)
 - [ ] 02-03-PLAN.md — veridoc-fhir lib: R4B model facade + FhirRepository (Mongo) + spec-native Provenance (D-01/D-02/D-03)
 - [ ] 02-04-PLAN.md — veridoc-ingestion abstractions: SourceAdapter/registry + OcrEngine + BlobStore + proprietary stub (D-05/D-07/D-08/D-10/D-11)
@@ -145,7 +145,7 @@ trail out — verifiable end-to-end.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Platform Skeleton & Audit Foundation | 6/6 | Complete   | 2026-06-11 |
-| 2. FHIR R4 Model & EMR Ingestion | 0/7 | Planned | - |
+| 2. FHIR R4 Model & EMR Ingestion | 1/7 | In Progress|  |
 | 3. Medidata Rave Mock Integration | 0/0 | Not started | - |
 | 4. Multi-Agent Framework & Orchestrator | 0/0 | Not started | - |
 | 5. Core Verification Agents | 0/0 | Not started | - |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
 status: executing
-stopped_at: 02-02 COMPLETE — advancing to 02-03
-last_updated: "2026-06-11T19:13:28.558Z"
+stopped_at: 02-05 COMPLETE — advancing to 02-06
+last_updated: "2026-06-11T20:15:00Z"
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 13
-  completed_plans: 9
-  percent: 69
+  completed_plans: 12
+  percent: 77
 ---
 
 # VeriDoc AI — Project State
@@ -34,7 +34,7 @@ Project memory. Updated as work progresses.
 ## Current Position
 
 Phase: 02 (fhir-r4-model-emr-ingestion) — EXECUTING
-Plan: 3 of 7
+Plan: 6 of 7
 
 - **Phase:** 1 — Platform Skeleton & Audit Foundation (COMPLETE)
 - **Plan:** 02-01 COMPLETE — Wave 0 foundation: veridoc-fhir + veridoc-ingestion libs registered,
@@ -44,13 +44,25 @@ Plan: 3 of 7
 - **Plan:** 02-02 COMPLETE — Deferred datastores: MongoDB + MinIO Helm templates + values + secret refs
   (D-02/D-10). mongodb.yaml + minio.yaml + ingestionService values staged for 02-07.
 
-- **Status:** Executing Phase 02 (Plans 1-2 of 7 COMPLETE, advancing to Plan 3)
-- **Progress:** [██████░░░░] 69%
+- **Plan:** 02-03 COMPLETE — veridoc-fhir R4B model layer: models.py, repository.py,
+  provenance.py, extensions.py (FHIR R4B resource re-exports + MongoDB FhirRepository + Provenance factory).
+
+- **Plan:** 02-04 COMPLETE — veridoc-ingestion contracts: SourceAdapter ABC, SourceProfile,
+  SourceProfileRegistry, OcrEngine ABCs (Tesseract/Textract/Azure stubs), BlobStore ABCs
+  (S3/Azure stubs), ProprietaryAdapter stub.
+
+- **Plan:** 02-05 COMPLETE — EMR ingestion adapters (D-11): NativeFhirAdapter, HL7v2Adapter
+  + explicit hl7v2_fhir mapping layer (D-12), PdfExcelAdapter (pypdf/openpyxl), OcrAdapter
+  (DocumentReference + ALCOA flags), RuleBasedExtractor (D-09). All four registered in
+  SourceProfileRegistry. PII pseudonymized at ingestion (D-14, SC-4). 9/10 adapter tests pass.
+
+- **Status:** Executing Phase 02 (Plans 1-5 of 7 COMPLETE, advancing to Plan 6)
+- **Progress:** [████████░░] 77%
 
 ## Performance Metrics
 
 - Phases complete: 1/8
-- Plans complete: 8/13 (6 phase 01 + 2 phase 02)
+- Plans complete: 12/13 (6 phase 01 + 5 phase 02 + plans 03/04/05 added)
 - Requirements mapped: 16/16 (100%)
 - Orphaned requirements: 0
 
@@ -63,6 +75,7 @@ Plan: 3 of 7
 | 01 | 05 | ~55min | 3 | 24 |
 | 02 | 01 | ~25min | 3 | 22 |
 | 02 | 02 | ~15min | 2 | 4 |
+| 02 | 05 | ~45min | 2 | 9 |
 
 ## Accumulated Context
 
@@ -149,6 +162,18 @@ Plan: 3 of 7
   enabled=false; Deployment template (ingestion-service.yaml) deferred to 02-07 when the
   ingestion-service Docker image exists.
 
+- DEC-hl7v2-natural-id-cx1 (02-05) — PID.3 CX_1 (raw ID component only) used as natural_id
+  for pseudonym_token; assigning authority stripped (open question #3 from RESEARCH.md resolved).
+  Rationale: authority is site metadata, not patient identity; CX_1 is the stable patient ID.
+
+- DEC-native-fhir-9-resources (02-05) — NativeFhirAdapter filters Synthea bundles to 9 scoped
+  resource types only (Patient, Encounter, Observation, Condition, MedicationRequest, AdverseEvent,
+  DiagnosticReport, DocumentReference, Procedure, Provenance). Claim/EOB/Immunization excluded.
+
+- DEC-ocr-docstatus-preliminary (02-05) — OcrAdapter sets DocumentReference.docStatus=preliminary
+  at ingestion time (open question #2 from RESEARCH.md resolved). Phase 5 ALCOA+ agent updates
+  to final or escalates.
+
 ### Open decisions
 
 - DEC-cloud-provider — AWS vs Azure UNDECIDED. Keep IaC provider-portable until decided.
@@ -184,13 +209,15 @@ Plan: 3 of 7
 
 ## Session Continuity
 
-- **Last action:** Completed 02-02-PLAN.md — Deferred datastores (D-02/D-10): MongoDB + MinIO
-  Helm Deployment + Service templates, values.yaml sections (mongodb, minio, ingestionService),
-  secrets.mongodb + secrets.minio entries, secrets.yaml contract extended. Commits: 77aa8f3 (T1),
-  f1c79aa (T2). SUMMARY at .planning/phases/02-fhir-r4-model-emr-ingestion/02-02-SUMMARY.md.
+- **Last action:** Completed 02-05-PLAN.md — EMR ingestion adapters (D-11): NativeFhirAdapter,
+  HL7v2Adapter + hl7v2_fhir explicit mapping layer (D-12), PdfExcelAdapter (pypdf/openpyxl),
+  OcrAdapter (DocumentReference + ALCOA flags + blob retention), RuleBasedExtractor (D-09).
+  All four adapters registered in SourceProfileRegistry. PII pseudonymized at ingestion (D-14, SC-4).
+  Commits: 16920fb (RED), bbd7bb0 (Task 1 GREEN), e452182 (Task 2 GREEN).
+  SUMMARY at .planning/phases/02-fhir-r4-model-emr-ingestion/02-05-SUMMARY.md.
 
-- **Next action:** Plan 02-03 — veridoc-fhir FHIR R4B model layer (models.py, repository.py,
-  provenance.py, extensions.py).
+- **Next action:** Plan 02-06 — ingestion-service FastAPI + RQ worker (POST /ingest/{site_id}
+  enqueues jobs; rq worker calls adapter + saves to MongoDB + writes provenance + appends audit).
 
-- **Stopped at:** 02-02 COMPLETE — advancing to 02-03
-- **Resume file:** .planning/phases/02-fhir-r4-model-emr-ingestion/02-03-PLAN.md
+- **Stopped at:** 02-05 COMPLETE — advancing to 02-06
+- **Resume file:** .planning/phases/02-fhir-r4-model-emr-ingestion/02-06-PLAN.md

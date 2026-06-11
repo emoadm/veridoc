@@ -126,3 +126,53 @@ Either path is acceptable; the decision is recorded here and consumed by plan 01
 Sign-off complete; executor received **"approved"**. Tasks 2–3 of plan 01-01
 (`uv add` / `pnpm add` of APPROVED packages) may run. Versions resolve to latest
 stable and are pinned via committed lockfiles (`uv.lock`, `pnpm-lock.yaml`).
+
+---
+
+## Phase 02 (FHIR R4 Model & EMR Ingestion)
+
+> **Status: PENDING HUMAN REVIEW.** This section gates every `uv add` in Phase 02
+> (threat **T-02-SC** — supply-chain / hallucinated dependency). All rows carry
+> `[ASSUMED]` verdicts because slopcheck was unavailable during the research session.
+> No `uv add` may run until all verdict cells are filled in as `APPROVED` or `REJECTED`.
+>
+> Source: `02-RESEARCH.md` § Package Legitimacy Audit. Every package there is tagged
+> `[ASSUMED]` because slopcheck, `ctx7`, and registry CLIs were network-blocked during
+> the research session. The human reviewer must, for each row: (1) confirm the package
+> exists and is the authentic, maintained project on the correct registry (not a
+> typo-squat / hallucination), (2) confirm the latest stable version, and (3) write
+> the **Verified version** and the **Verdict** (`APPROVED` or `REJECTED`).
+
+### Python packages (registry: PyPI)
+
+| Package | Ecosystem / registry | Assumed version | Verified version | Verdict (APPROVED/REJECTED) | Notes |
+|---------|----------------------|-----------------|------------------|------------------------------|-------|
+| fhir.resources | PyPI | >=8.2.0 | | | FHIR R4B Pydantic v2 resource models + validation. Maintainer: nazrulworld (`github.com/nazrulworld/fhir.resources`). Used in `veridoc-fhir` lib. Always import via `fhir.resources.R4B.*` (v7+ dropped top-level R4). |
+| pymongo | PyPI | >=4.17.0 | | | Async MongoDB driver (`AsyncMongoClient`). MongoDB-official (`github.com/mongodb/mongo-python-driver`). Motor is deprecated (EOL 2026-05-14); native async stable since pymongo 4.13. Do NOT install `motor`. |
+| rq | PyPI | >=2.9.1 | | | Redis-backed async job queue (`github.com/rq/rq`). Zero extra infra (Redis already present). JSONSerializer required (no pickle — RCE risk). |
+| hl7apy | PyPI | >=1.3.5 | | | HL7 v2.x message parsing + construction. CRS4-official (`github.com/crs4/hl7apy`). Supports v2.1–v2.8.2. Last release March 2024. |
+| pytesseract | PyPI | >=0.3.13 | | | Tesseract OCR Python wrapper; per-word confidence via `image_to_data()`. Apache-2.0 (`github.com/madmaze/pytesseract`). Requires `tesseract-ocr` system package + `Pillow` (see row below). |
+| Pillow | PyPI | latest stable (transitive) | | | **Required transitive dependency of `pytesseract`** for image decoding (PIL.Image). Authentic: `python-pillow/Pillow` (`github.com/python-pillow/Pillow`). Added per the Phase 01 precedent: needed transitive deps recorded with verified verdict before install. |
+| boto3 | PyPI | >=1.43.0 | | | S3-compatible blob client; works with MinIO via `endpoint_url` and real S3/Azure Blob. AWS-official (`github.com/boto/boto3`). Keeps DEC-cloud-provider portable. |
+| openpyxl | PyPI | >=3.1.5 | | | Excel (.xlsx) parsing for semi-manual import path. MIT license (`foss.heptapod.net/openpyxl/openpyxl`). Well-maintained standard Python Excel library. |
+| pypdf | PyPI | >=6.13.0 | | | PDF text extraction for semi-manual import path. Apache-2.0 (`github.com/py-pdf/pypdf`). Actively maintained successor to archived PyPDF2. |
+
+> **Packages NOT installed this phase:**
+> `motor` — explicitly excluded (deprecated EOL 2026-05-14; Pitfall 2); use `pymongo.AsyncMongoClient`.
+> `testcontainers` MongoDB + MinIO modules — already APPROVED from Phase 01 (only new sub-package usage, no new install).
+
+### Threat mapping
+
+| Threat ID | Mitigation |
+|-----------|------------|
+| T-02-SC | This table. All 8 packages + Pillow verified against PyPI before any `uv add` runs. Gate is blocking-human; never auto-approvable. |
+| T-02-01 | `motor` row intentionally absent. uv.lock will be asserted free of `motor` in Task 2. |
+
+### Review sign-off (Phase 02)
+
+- **Reviewer:** _(fill in when complete)_
+- **Date:** _(fill in when complete)_
+- **Outcome:** _(PENDING)_
+- **Rejections / substitutions:** _(list any rejected packages and proposed substitutes, or "none")_
+
+Reply **"approved"** once every Phase 02 verdict is filled in, or list the packages to reject / substitute.

@@ -252,9 +252,9 @@ class TestPdfExcelAdapter:
         assert isinstance(resources, list), "ingest must return a list"
         assert len(resources) > 0, "PDF adapter must produce at least one resource"
 
-        # Should produce FHIR R4B models
+        # Should produce FHIR R4B models (get_resource_type() is the stable accessor)
         for r in resources:
-            assert hasattr(r, "resource_type"), f"Expected FHIR model, got {type(r)}"
+            assert hasattr(r, "get_resource_type"), f"Expected FHIR model, got {type(r)}"
 
         # Lab report with Creatinine/Sodium/Potassium → Observations expected
         resource_types = [r.get_resource_type() for r in resources]

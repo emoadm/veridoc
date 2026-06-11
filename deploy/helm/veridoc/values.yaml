@@ -179,3 +179,58 @@ mongodb:
     # cluster lands (DEC-cloud-provider). Provider-portable: no cloud volume here.
     enabled: false
     size: 5Gi
+
+# ---------------------------------------------------------------------------- #
+# MinIO (D-10) — S3-compatible blob store for retained original scanned docs.
+# Tag pinned to a RELEASE.* tag (T-02-INFRA-03 — never use `latest`).
+# Credentials via veridoc-minio Secret (T-02-INFRA-02 — never inlined).
+# ---------------------------------------------------------------------------- #
+minio:
+  enabled: true
+  image:
+    repository: minio/minio
+    # Pinned RELEASE.* tag (T-02-INFRA-03). Update via values overlay in prod.
+    tag: "RELEASE.2024-01-01T00-00-00Z"
+  replicas: 1
+  port: 9000
+  consolePort: 9001
+  # Default bucket for retained originals (DocumentReference blob URIs point here).
+  defaultBucket: veridoc-docs
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  persistence:
+    # emptyDir in kind/CI; PVC in prod (DEC-cloud-provider OPEN).
+    enabled: false
+    size: 10Gi
+
+# ---------------------------------------------------------------------------- #
+# Ingestion service (D-04) — staged here for 02-07 (Deployment template not yet
+# created; values present so the final wave can reference them without changes).
+# ---------------------------------------------------------------------------- #
+ingestionService:
+  enabled: false
+  image:
+    repository: veridoc/ingestion-service
+    tag: "ci"
+  replicas: 1
+  port: 8000
+  healthPath: /healthz
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "2"
+      memory: 1Gi
+  config:
+    keycloakIssuer: "http://veridoc-keycloak:8080/realms/veridoc"
+    keycloakJwksUri: "http://veridoc-keycloak:8080/realms/veridoc/protocol/openid-connect/certs"
+    keycloakAudience: "ingestion-service"
+    redisUrl: "redis://veridoc-redis:6379/0"
+    blobEndpointUrl: "http://veridoc-minio:9000"
+    blobBucket: "veridoc-docs"

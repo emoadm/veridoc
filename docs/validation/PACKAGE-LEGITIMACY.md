@@ -131,10 +131,11 @@ stable and are pinned via committed lockfiles (`uv.lock`, `pnpm-lock.yaml`).
 
 ## Phase 02 (FHIR R4 Model & EMR Ingestion)
 
-> **Status: PENDING HUMAN REVIEW.** This section gates every `uv add` in Phase 02
-> (threat **T-02-SC** — supply-chain / hallucinated dependency). All rows carry
-> `[ASSUMED]` verdicts because slopcheck was unavailable during the research session.
-> No `uv add` may run until all verdict cells are filled in as `APPROVED` or `REJECTED`.
+> **Status: APPROVED (2026-06-11).** This section gates every `uv add` in Phase 02
+> (threat **T-02-SC** — supply-chain / hallucinated dependency). All rows verified
+> against the PyPI JSON API: maintainer + source repo confirmed authentic, latest
+> stable version recorded, no typo-squats or hallucinated packages found.
+> All `uv add` operations for Phase 02 are cleared to proceed.
 >
 > Source: `02-RESEARCH.md` § Package Legitimacy Audit. Every package there is tagged
 > `[ASSUMED]` because slopcheck, `ctx7`, and registry CLIs were network-blocked during
@@ -147,15 +148,15 @@ stable and are pinned via committed lockfiles (`uv.lock`, `pnpm-lock.yaml`).
 
 | Package | Ecosystem / registry | Assumed version | Verified version | Verdict (APPROVED/REJECTED) | Notes |
 |---------|----------------------|-----------------|------------------|------------------------------|-------|
-| fhir.resources | PyPI | >=8.2.0 | | | FHIR R4B Pydantic v2 resource models + validation. Maintainer: nazrulworld (`github.com/nazrulworld/fhir.resources`). Used in `veridoc-fhir` lib. Always import via `fhir.resources.R4B.*` (v7+ dropped top-level R4). |
-| pymongo | PyPI | >=4.17.0 | | | Async MongoDB driver (`AsyncMongoClient`). MongoDB-official (`github.com/mongodb/mongo-python-driver`). Motor is deprecated (EOL 2026-05-14); native async stable since pymongo 4.13. Do NOT install `motor`. |
-| rq | PyPI | >=2.9.1 | | | Redis-backed async job queue (`github.com/rq/rq`). Zero extra infra (Redis already present). JSONSerializer required (no pickle — RCE risk). |
-| hl7apy | PyPI | >=1.3.5 | | | HL7 v2.x message parsing + construction. CRS4-official (`github.com/crs4/hl7apy`). Supports v2.1–v2.8.2. Last release March 2024. |
-| pytesseract | PyPI | >=0.3.13 | | | Tesseract OCR Python wrapper; per-word confidence via `image_to_data()`. Apache-2.0 (`github.com/madmaze/pytesseract`). Requires `tesseract-ocr` system package + `Pillow` (see row below). |
-| Pillow | PyPI | latest stable (transitive) | | | **Required transitive dependency of `pytesseract`** for image decoding (PIL.Image). Authentic: `python-pillow/Pillow` (`github.com/python-pillow/Pillow`). Added per the Phase 01 precedent: needed transitive deps recorded with verified verdict before install. |
-| boto3 | PyPI | >=1.43.0 | | | S3-compatible blob client; works with MinIO via `endpoint_url` and real S3/Azure Blob. AWS-official (`github.com/boto/boto3`). Keeps DEC-cloud-provider portable. |
-| openpyxl | PyPI | >=3.1.5 | | | Excel (.xlsx) parsing for semi-manual import path. MIT license (`foss.heptapod.net/openpyxl/openpyxl`). Well-maintained standard Python Excel library. |
-| pypdf | PyPI | >=6.13.0 | | | PDF text extraction for semi-manual import path. Apache-2.0 (`github.com/py-pdf/pypdf`). Actively maintained successor to archived PyPDF2. |
+| fhir.resources | PyPI | >=8.2.0 | 8.2.0 | APPROVED | FHIR R4B Pydantic v2 resource models + validation. Maintainer: nazrulworld (`github.com/nazrulworld/fhir.resources`). Used in `veridoc-fhir` lib. Always import via `fhir.resources.R4B.*` (v7+ dropped top-level R4). PyPI: author Md Nazrul Islam, 42 releases, last 2026-02-02. |
+| pymongo | PyPI | >=4.17.0 | 4.17.0 | APPROVED | Async MongoDB driver (`AsyncMongoClient`). MongoDB-official (`github.com/mongodb/mongo-python-driver`). Motor is deprecated (EOL 2026-05-14); native async stable since pymongo 4.13. Do NOT install `motor`. PyPI: author The MongoDB Python Team, 170 releases, last 2026-04-20. |
+| rq | PyPI | >=2.9.1 | 2.9.1 | APPROVED | Redis-backed async job queue (`github.com/rq/rq`). Zero extra infra (Redis already present). JSONSerializer required (no pickle — RCE risk). PyPI: authors Selwin Ong + Vincent Driessen, 95 releases, last 2026-06-06. |
+| hl7apy | PyPI | >=1.3.5 | 1.3.5 | APPROVED | HL7 v2.x message parsing + construction. CRS4-official (`github.com/crs4/hl7apy`). Supports v2.1–v2.8.2. PyPI: CRS4 team, 14 releases, last 2024-03-13 (mature/stable; low release cadence normal for this niche lib). |
+| pytesseract | PyPI | >=0.3.13 | 0.3.13 | APPROVED | Tesseract OCR Python wrapper; per-word confidence via `image_to_data()`. Apache-2.0 (`github.com/madmaze/pytesseract`). Requires `tesseract-ocr` system package + `Pillow` (see row below). PyPI: maintainer Matthias Lee (madmaze), 28 releases, last 2024-08-16. |
+| Pillow | PyPI | latest stable (transitive) | 12.2.0 | APPROVED | **Required transitive dependency of `pytesseract`** for image decoding (PIL.Image). Authentic: `python-pillow/Pillow` (`github.com/python-pillow/Pillow`). PyPI: author Jeffrey 'Alex' Clark, 106 releases, last 2026-04-01. |
+| boto3 | PyPI | >=1.43.0 | 1.43.27 | APPROVED | S3-compatible blob client; works with MinIO via `endpoint_url` and real S3/Azure Blob. AWS-official (`github.com/boto/boto3`). Keeps DEC-cloud-provider portable. PyPI: author Amazon Web Services, 2051 releases, last 2026-06-10. |
+| openpyxl | PyPI | >=3.1.5 | 3.1.5 | APPROVED | Excel (.xlsx) parsing for semi-manual import path. MIT license (`foss.heptapod.net/openpyxl/openpyxl`). Well-maintained standard Python Excel library. PyPI: 96 releases, last 2024-06-28 (mature/stable). |
+| pypdf | PyPI | >=6.13.0 | 6.13.2 | APPROVED | PDF text extraction for semi-manual import path. Apache-2.0 (`github.com/py-pdf/pypdf`). Actively maintained successor to archived PyPDF2. PyPI: author Mathieu Fenniak / maintainer stefan6419846, 108 releases, last 2026-06-10. |
 
 > **Packages NOT installed this phase:**
 > `motor` — explicitly excluded (deprecated EOL 2026-05-14; Pitfall 2); use `pymongo.AsyncMongoClient`.
@@ -170,9 +171,9 @@ stable and are pinned via committed lockfiles (`uv.lock`, `pnpm-lock.yaml`).
 
 ### Review sign-off (Phase 02)
 
-- **Reviewer:** _(fill in when complete)_
-- **Date:** _(fill in when complete)_
-- **Outcome:** _(PENDING)_
-- **Rejections / substitutions:** _(list any rejected packages and proposed substitutes, or "none")_
+- **Reviewer:** emoadm (human gate; PyPI data gathered via PyPI JSON API)
+- **Date:** 2026-06-11
+- **Outcome:** APPROVED — all 9 packages verified authentic against PyPI; no rejections.
+- **Rejections / substitutions:** none
 
-Reply **"approved"** once every Phase 02 verdict is filled in, or list the packages to reject / substitute.
+Verdicts filled in and signed off 2026-06-11. Gate cleared — Phase 02 `uv add`/`uv sync` may proceed.

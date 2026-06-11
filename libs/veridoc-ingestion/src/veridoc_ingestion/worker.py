@@ -154,8 +154,10 @@ async def _async_ingest(
     for resource in resources:
         rid = await repo.save(resource)
         resource_ids.append(rid)
-        # Track patient_id for Provenance target ref
-        if resource.resource_type == "Patient" and patient_id is None:
+        # Track patient_id for Provenance target ref.
+        # CR-03: fhir.resources models expose the classmethod get_resource_type();
+        # there is no `resource_type` attribute (AttributeError otherwise).
+        if resource.get_resource_type() == "Patient" and patient_id is None:
             patient_id = resource.id or rid
 
     # 5. Create and persist a Provenance resource for this ingest batch

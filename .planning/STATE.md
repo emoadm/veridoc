@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
 status: executing
-stopped_at: "02-01 COMPLETE — advancing to 02-02"
-last_updated: "2026-06-11T18:45:09Z"
+stopped_at: 02-02 COMPLETE — advancing to 02-03
+last_updated: "2026-06-11T19:15:00.000Z"
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 13
-  completed_plans: 7
-  percent: 54
+  completed_plans: 9
+  percent: 69
 ---
 
 # VeriDoc AI — Project State
@@ -34,19 +34,22 @@ Project memory. Updated as work progresses.
 ## Current Position
 
 Phase: 02 (fhir-r4-model-emr-ingestion) — EXECUTING
-Plan: 2 of 7
+Plan: 3 of 7
 
 - **Phase:** 1 — Platform Skeleton & Audit Foundation (COMPLETE)
 - **Plan:** 02-01 COMPLETE — Wave 0 foundation: veridoc-fhir + veridoc-ingestion libs registered,
   all 9 Phase 02 packages installed, Synthea R4B fixtures + AdverseEvent + HL7/PDF/image fixtures
   committed, Mongo/MinIO testcontainer conftests wired.
-- **Status:** Executing Phase 02 (Plan 1 of 7 COMPLETE, advancing to Plan 2)
-- **Progress:** [█████░░░░░] 54%
+- **Plan:** 02-02 COMPLETE — Deferred datastores: MongoDB + MinIO Helm templates + values + secret refs
+  (D-02/D-10). mongodb.yaml + minio.yaml + ingestionService values staged for 02-07.
+
+- **Status:** Executing Phase 02 (Plans 1-2 of 7 COMPLETE, advancing to Plan 3)
+- **Progress:** [██████░░░░] 69%
 
 ## Performance Metrics
 
 - Phases complete: 1/8
-- Plans complete: 7/13 (6 phase 01 + 1 phase 02)
+- Plans complete: 8/13 (6 phase 01 + 2 phase 02)
 - Requirements mapped: 16/16 (100%)
 - Orphaned requirements: 0
 
@@ -58,6 +61,7 @@ Plan: 2 of 7
 | 01 | 04 | ~25min | 3 | 18 |
 | 01 | 05 | ~55min | 3 | 24 |
 | 02 | 01 | ~25min | 3 | 22 |
+| 02 | 02 | ~15min | 2 | 4 |
 
 ## Accumulated Context
 
@@ -134,6 +138,16 @@ Plan: 2 of 7
 - DEC-rq-json-serializer (02-01) — RQ job queue uses JSONSerializer; pickle explicitly excluded
   (RCE risk). All `ingest_job` arguments must be JSON-serializable primitives (no raw bytes).
 
+- DEC-mongodb-deployment-kind (02-02) — Deployment (not StatefulSet) for MongoDB at kind/CI
+  scale, mirroring postgres.yaml. PVC StorageClass deferred to DEC-cloud-provider resolution.
+
+- DEC-minio-release-tag (02-02) — MinIO image pinned to RELEASE.2024-01-01T00-00-00Z
+  (T-02-INFRA-03); never use `latest`. Update via values overlay in prod environments.
+
+- DEC-ingestion-service-enabled-false (02-02) — ingestionService values section staged with
+  enabled=false; Deployment template (ingestion-service.yaml) deferred to 02-07 when the
+  ingestion-service Docker image exists.
+
 ### Open decisions
 
 - DEC-cloud-provider — AWS vs Azure UNDECIDED. Keep IaC provider-portable until decided.
@@ -169,14 +183,13 @@ Plan: 2 of 7
 
 ## Session Continuity
 
-- **Last action:** Completed 02-01-PLAN.md — Wave 0 foundation: veridoc-fhir + veridoc-ingestion
-  libs registered as uv workspace members, all 9 Phase 02 packages installed and importable, 5
-  Synthea R4B transaction Bundle fixtures committed + hand-crafted AdverseEvent, HL7/PDF/image
-  fixtures hand-crafted, Mongo/MinIO testcontainer conftests created. Commits: c00b9aa (T2),
-  1adae2e (T3). SUMMARY at .planning/phases/02-fhir-r4-model-emr-ingestion/02-01-SUMMARY.md.
+- **Last action:** Completed 02-02-PLAN.md — Deferred datastores (D-02/D-10): MongoDB + MinIO
+  Helm Deployment + Service templates, values.yaml sections (mongodb, minio, ingestionService),
+  secrets.mongodb + secrets.minio entries, secrets.yaml contract extended. Commits: 77aa8f3 (T1),
+  f1c79aa (T2). SUMMARY at .planning/phases/02-fhir-r4-model-emr-ingestion/02-02-SUMMARY.md.
 
-- **Next action:** Plan 02-02 — FHIR R4B model layer (models.py, repository.py, provenance.py,
-  extensions.py) building on the fixtures and libs registered in 02-01.
+- **Next action:** Plan 02-03 — veridoc-fhir FHIR R4B model layer (models.py, repository.py,
+  provenance.py, extensions.py).
 
-- **Stopped at:** 02-01 COMPLETE — proceeding to 02-02
-- **Resume file:** .planning/phases/02-fhir-r4-model-emr-ingestion/02-02-PLAN.md
+- **Stopped at:** 02-02 COMPLETE — advancing to 02-03
+- **Resume file:** .planning/phases/02-fhir-r4-model-emr-ingestion/02-03-PLAN.md

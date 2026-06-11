@@ -30,7 +30,7 @@ class TestCreateProvenanceBasic:
             ingestion_path="native-fhir",
             actor_ref="Device/ingestion-service",
         )
-        assert prov.resource_type == "Provenance"
+        assert prov.get_resource_type() == "Provenance"
 
     def test_target_reference_set(self):
         from veridoc_fhir.provenance import create_provenance
@@ -166,7 +166,7 @@ class TestCreateProvenanceExtensions:
         assert len(ocr_exts) == 1, (
             "ocr-confidence extension must be present when ocr_confidence is passed"
         )
-        assert abs(ocr_exts[0].valueDecimal - 0.97) < 1e-6
+        assert abs(float(ocr_exts[0].valueDecimal) - 0.97) < 1e-6
 
     def test_ocr_confidence_zero_is_present(self):
         """0.0 is a valid confidence value (very poor OCR) — not falsy-None."""

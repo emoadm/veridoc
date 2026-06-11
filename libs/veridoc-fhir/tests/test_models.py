@@ -84,7 +84,7 @@ class TestResourceConstruction:
             "active": True,
         })
         assert p.id == "p-pseudo-001"
-        assert p.resource_type == "Patient"
+        assert p.get_resource_type() == "Patient"
 
     def test_encounter_construction(self):
         from veridoc_fhir.models import Encounter
@@ -98,7 +98,7 @@ class TestResourceConstruction:
                 "code": "AMB",
             },
         })
-        assert e.resource_type == "Encounter"
+        assert e.get_resource_type() == "Encounter"
 
     def test_observation_construction(self):
         from veridoc_fhir.models import Observation
@@ -110,7 +110,7 @@ class TestResourceConstruction:
             "code": {"coding": [{"system": "http://loinc.org", "code": "29463-7"}]},
             "subject": {"reference": "Patient/p-pseudo-001"},
         })
-        assert o.resource_type == "Observation"
+        assert o.get_resource_type() == "Observation"
 
     def test_condition_construction(self):
         from veridoc_fhir.models import Condition
@@ -121,7 +121,7 @@ class TestResourceConstruction:
             "subject": {"reference": "Patient/p-pseudo-001"},
             "code": {"coding": [{"system": "http://snomed.info/sct", "code": "44054006"}]},
         })
-        assert c.resource_type == "Condition"
+        assert c.get_resource_type() == "Condition"
 
     def test_medication_request_construction(self):
         from veridoc_fhir.models import MedicationRequest
@@ -136,7 +136,7 @@ class TestResourceConstruction:
                 "coding": [{"system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "1049502"}]
             },
         })
-        assert mr.resource_type == "MedicationRequest"
+        assert mr.get_resource_type() == "MedicationRequest"
 
     def test_adverse_event_construction(self):
         from veridoc_fhir.models import AdverseEvent
@@ -147,7 +147,7 @@ class TestResourceConstruction:
             "actuality": "actual",
             "subject": {"reference": "Patient/p-pseudo-001"},
         })
-        assert ae.resource_type == "AdverseEvent"
+        assert ae.get_resource_type() == "AdverseEvent"
 
     def test_diagnostic_report_construction(self):
         from veridoc_fhir.models import DiagnosticReport
@@ -159,7 +159,7 @@ class TestResourceConstruction:
             "code": {"coding": [{"system": "http://loinc.org", "code": "11502-2"}]},
             "subject": {"reference": "Patient/p-pseudo-001"},
         })
-        assert dr.resource_type == "DiagnosticReport"
+        assert dr.get_resource_type() == "DiagnosticReport"
 
     def test_document_reference_construction(self):
         from veridoc_fhir.models import DocumentReference
@@ -170,7 +170,7 @@ class TestResourceConstruction:
             "status": "current",
             "content": [{"attachment": {"contentType": "application/pdf", "url": "s3://bucket/doc.pdf"}}],
         })
-        assert docref.resource_type == "DocumentReference"
+        assert docref.get_resource_type() == "DocumentReference"
 
     def test_procedure_construction(self):
         from veridoc_fhir.models import Procedure
@@ -182,7 +182,7 @@ class TestResourceConstruction:
             "subject": {"reference": "Patient/p-pseudo-001"},
             "code": {"coding": [{"system": "http://snomed.info/sct", "code": "80146002"}]},
         })
-        assert proc.resource_type == "Procedure"
+        assert proc.get_resource_type() == "Procedure"
 
     def test_provenance_construction(self):
         from veridoc_fhir.models import Provenance
@@ -195,7 +195,7 @@ class TestResourceConstruction:
             "recorded": datetime.now(timezone.utc).isoformat(),
             "agent": [{"who": {"reference": "Device/ingestion-service"}}],
         })
-        assert prov.resource_type == "Provenance"
+        assert prov.get_resource_type() == "Provenance"
 
 
 class TestRoundTrip:
@@ -250,7 +250,7 @@ class TestSyntheaFixtures:
             data = json.load(f)
         # Bundles may contain extra extensions; allow unknown fields in test context
         bundle = Bundle.model_validate(data)
-        assert bundle.resource_type == "Bundle"
+        assert bundle.get_resource_type() == "Bundle"
         assert len(bundle.entry or []) > 0
 
     def test_adverse_event_fixture_validates(self):
@@ -262,7 +262,7 @@ class TestSyntheaFixtures:
         with open(fixture_path) as f:
             data = json.load(f)
         ae = AdverseEvent.model_validate(data)
-        assert ae.resource_type == "AdverseEvent"
+        assert ae.get_resource_type() == "AdverseEvent"
         assert ae.id == "ae-veridoc-edge-case-001"
 
     def test_synthea_bundles_contain_required_resource_types(self):

@@ -112,11 +112,19 @@ class HL7v2Adapter(SourceAdapter):
         natural_id = _extract_natural_id(normalized)
         patient_id = patient_pseudonym(profile.site_id, natural_id)
 
-        # Dispatch to the explicit mapping layer (D-12)
-        if msg_struct in ("ADT_A01",) or "ADT^A01" in msg_type:
-            return hl7v2_fhir.map_adt_a01_to_fhir(normalized, patient_id)
-        elif msg_struct in ("ORU_R01",) or "ORU^R01" in msg_type:
-            return hl7v2_fhir.map_oru_r01_to_fhir(normalized, patient_id)
+        # Authoritative dispatch on the parsed (message code, trigger event) tuple
+        # from MSH-9 — NOT a substring test on the raw value (WR-04: substring
+        # matching is order-sensitive and can match unintended composite types).
+        msg_code = msh.msh_9.msg_1.value or ""
+        trigger = msh.msh_9.msg_2.value or ""
+        dispatch = (msg_code, trigger)
+
+        # Dispatch to the explicit mapping layer (D-12). site_id is threaded
+        # through so every emitted resource carries meta.source (CR-06 / WR-07).
+        if dispatch == ("ADT", "A01") or msg_struct == "ADT_A01":
+            return hl7v2_fhir.map_adt_a01_to_fhir(normalized, patient_id, profile.site_id)
+        elif dispatch == ("ORU", "R01") or msg_struct == "ORU_R01":
+            return hl7v2_fhir.map_oru_r01_to_fhir(normalized, patient_id, profile.site_id)
         else:
             raise ValueError(
                 f"HL7v2Adapter: unsupported message type {msg_type!r} "

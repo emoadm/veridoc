@@ -87,7 +87,17 @@ def _parse_hl7_date(value: str) -> str | None:
     return f"{value[:4]}-{value[4:6]}-{value[6:8]}"
 
 
-def map_adt_a01_to_fhir(hl7_msg_str: str, patient_id: str) -> list:
+def _hl7_source_urn(site_id: str) -> str:
+    """Canonical HL7v2 source URN for a site (CR-06 / WR-07).
+
+    Used as ``meta.source`` on EVERY resource the HL7 mapping emits so the
+    (resourceType, meta.source) index and source-attribution queries resolve, and
+    ALCOA "Attributable" holds for the whole HL7 path — not just Patient.
+    """
+    return f"urn:veridoc:source:hl7v2:{site_id}"
+
+
+def map_adt_a01_to_fhir(hl7_msg_str: str, patient_id: str, site_id: str) -> list:
     """Map an ADT_A01 HL7 v2.x message to FHIR R4B [Patient, Encounter].
 
     Uses hl7apy structured field access (D-12). PID.3 CX_1 is used as the
@@ -98,6 +108,9 @@ def map_adt_a01_to_fhir(hl7_msg_str: str, patient_id: str) -> list:
         hl7_msg_str: Raw HL7 v2.x ER7-encoded string (newlines OR carriage returns).
         patient_id: Pseudonymized patient identifier (from caller; already derived
                     via pseudonym_token before this function is called).
+        site_id: The real clinical-site identifier; used to stamp
+                 ``meta.source = urn:veridoc:source:hl7v2:{site_id}`` on every
+                 emitted resource (CR-06 / WR-07).
 
     Returns:
         List of fhir.resources.R4B model instances: [Patient, Encounter].
@@ -105,6 +118,8 @@ def map_adt_a01_to_fhir(hl7_msg_str: str, patient_id: str) -> list:
     from hl7apy.parser import parse_message
     from fhir.resources.R4B.patient import Patient
     from fhir.resources.R4B.encounter import Encounter
+
+    source_urn = _hl7_source_urn(site_id)
 
     # hl7apy requires CR (\r) as segment separator; normalize LF → CR
     normalized = hl7_msg_str.replace("\n", "\r").strip()
@@ -118,7 +133,7 @@ def map_adt_a01_to_fhir(hl7_msg_str: str, patient_id: str) -> list:
         "resourceType": "Patient",
         "id": patient_id,
         "meta": {
-            "source": "urn:veridoc:source:hl7v2:site",
+            "source": source_urn,  # CR-06: real site_id, not the literal "site"
         },
         "identifier": [
             {
@@ -145,6 +160,7 @@ def map_adt_a01_to_fhir(hl7_msg_str: str, patient_id: str) -> list:
     encounter = Encounter.model_validate({
         "resourceType": "Encounter",
         "id": str(uuid.uuid4()),
+        "meta": {"source": source_urn},  # WR-07: attribution on Encounter too
         "status": "finished",
         "class": {
             "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
@@ -158,7 +174,7 @@ def map_adt_a01_to_fhir(hl7_msg_str: str, patient_id: str) -> list:
     return [patient, encounter]
 
 
-def map_oru_r01_to_fhir(hl7_msg_str: str, patient_id: str) -> list:
+def map_oru_r01_to_fhir(hl7_msg_str: str, patient_id: str, site_id: str) -> list:
     """Map an ORU_R01 HL7 v2.x message to FHIR R4B [Observation(+), DiagnosticReport].
 
     Uses hl7apy structured field access (D-12).  OBX-3 → Observation.code (LOINC);
@@ -167,6 +183,9 @@ def map_oru_r01_to_fhir(hl7_msg_str: str, patient_id: str) -> list:
     Args:
         hl7_msg_str: Raw HL7 v2.x ER7-encoded string.
         patient_id: Pseudonymized patient identifier (from caller).
+        site_id: The real clinical-site identifier; used to stamp
+                 ``meta.source = urn:veridoc:source:hl7v2:{site_id}`` on every
+                 emitted resource (WR-07).
 
     Returns:
         List of fhir.resources.R4B model instances: [Observation, ..., DiagnosticReport].
@@ -174,6 +193,8 @@ def map_oru_r01_to_fhir(hl7_msg_str: str, patient_id: str) -> list:
     from hl7apy.parser import parse_message
     from fhir.resources.R4B.observation import Observation
     from fhir.resources.R4B.diagnosticreport import DiagnosticReport
+
+    source_urn = _hl7_source_urn(site_id)
 
     normalized = hl7_msg_str.replace("\n", "\r").strip()
     msg = parse_message(normalized, find_groups=False)
@@ -232,6 +253,7 @@ def map_oru_r01_to_fhir(hl7_msg_str: str, patient_id: str) -> list:
         obs_dict: dict = {
             "resourceType": "Observation",
             "id": obs_id,
+            "meta": {"source": source_urn},  # WR-07: attribution on each Observation
             "status": "final",
             "code": {
                 "coding": [
@@ -256,6 +278,7 @@ def map_oru_r01_to_fhir(hl7_msg_str: str, patient_id: str) -> list:
     dr = DiagnosticReport.model_validate({
         "resourceType": "DiagnosticReport",
         "id": str(uuid.uuid4()),
+        "meta": {"source": source_urn},  # WR-07: attribution on DiagnosticReport
         "status": "final",
         "code": {
             "coding": [

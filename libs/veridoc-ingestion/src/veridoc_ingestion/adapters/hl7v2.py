@@ -35,26 +35,47 @@ def _extract_natural_id(hl7_msg_str: str) -> str:
     Uses hl7apy to access the CX_1 sub-component (raw ID without assigning authority).
     Falls back to the full PID.3 value if sub-component access fails.
 
+    WR-06: a missing PID segment or an empty PID.3 is a HARD ERROR, not a default.
+    Previously this returned the literal ``"UNKNOWN"``, which was then HMAC'd into
+    the pseudonym token — collapsing every MRN-less message at a site into ONE
+    pseudonymized patient and silently merging unrelated patients' clinical data.
+    We raise ``ValueError`` instead so the message is dead-lettered for manual
+    handling rather than merged under a shared sentinel identity.
+
     Args:
         hl7_msg_str: Normalized HL7 ER7 string (CR-separated).
 
     Returns:
         The raw patient identifier string (CX_1).
+
+    Raises:
+        ValueError: If the PID segment is absent or PID.3 yields no usable ID.
     """
     from hl7apy.parser import parse_message
 
     msg = parse_message(hl7_msg_str, find_groups=False)
     pid = next((c for c in msg.children if c.name == "PID"), None)
     if pid is None:
-        return "UNKNOWN"
+        raise ValueError(
+            "HL7v2Adapter: PID segment missing — cannot derive a patient natural_id; "
+            "message dead-lettered (would otherwise merge into a shared identity)"
+        )
 
+    natural_id = ""
     try:
         # PID.3 is a CX-encoded identifier: ID^^^Authority^type
         # CX_1 is the raw ID component (open question #3: use CX_1, not the full CX value)
         cx1 = pid.pid_3.cx_1.value
-        return cx1 if cx1 else pid.pid_3.value
+        natural_id = cx1 if cx1 else pid.pid_3.value
     except Exception:  # noqa: BLE001
-        return pid.pid_3.value or "UNKNOWN"
+        natural_id = pid.pid_3.value or ""
+
+    if not natural_id:
+        raise ValueError(
+            "HL7v2Adapter: PID.3 is empty — no patient identifier (MRN) present; "
+            "message dead-lettered (would otherwise merge into a shared identity)"
+        )
+    return natural_id
 
 
 class HL7v2Adapter(SourceAdapter):

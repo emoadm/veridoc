@@ -62,7 +62,7 @@ model, ready for agents to verify.
 - [x] 02-03-PLAN.md — veridoc-fhir lib: R4B model facade + FhirRepository (Mongo) + spec-native Provenance (D-01/D-02/D-03)
 - [x] 02-04-PLAN.md — veridoc-ingestion abstractions: SourceAdapter/registry + OcrEngine + BlobStore + proprietary stub (D-05/D-07/D-08/D-10/D-11)
 - [x] 02-05-PLAN.md — Four adapters + HL7→FHIR mapping + rule-based extraction, pseudonymized at ingestion (D-09/D-11/D-12/D-14)
-- [ ] 02-06-PLAN.md — ingestion-service (FastAPI ingest + RQ worker, D-06 worker-owned audit) + Tesseract Dockerfile (D-04/D-06)
+- [x] 02-06-PLAN.md — ingestion-service (FastAPI ingest + RQ worker, D-06 worker-owned audit) + Tesseract Dockerfile (D-04/D-06)
 - [ ] 02-07-PLAN.md — Deploy wiring: ingestion-service + RQ-worker Helm Deployments + CI tesseract/testcontainers + kind ingest smoke test
 
 ### Phase 3: Medidata Rave Mock Integration

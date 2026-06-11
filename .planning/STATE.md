@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
 status: executing
-stopped_at: 02-05 COMPLETE — advancing to 02-06
-last_updated: "2026-06-11T20:15:00Z"
+stopped_at: 02-06 COMPLETE — advancing to 02-07
+last_updated: "2026-06-11T20:45:00Z"
 progress:
   total_phases: 8
   completed_phases: 1
-  total_plans: 13
-  completed_plans: 12
-  percent: 77
+  total_plans: 14
+  completed_plans: 13
+  percent: 85
 ---
 
 # VeriDoc AI — Project State
@@ -34,7 +34,7 @@ Project memory. Updated as work progresses.
 ## Current Position
 
 Phase: 02 (fhir-r4-model-emr-ingestion) — EXECUTING
-Plan: 6 of 7
+Plan: 7 of 7
 
 - **Phase:** 1 — Platform Skeleton & Audit Foundation (COMPLETE)
 - **Plan:** 02-01 COMPLETE — Wave 0 foundation: veridoc-fhir + veridoc-ingestion libs registered,
@@ -56,13 +56,20 @@ Plan: 6 of 7
   (DocumentReference + ALCOA flags), RuleBasedExtractor (D-09). All four registered in
   SourceProfileRegistry. PII pseudonymized at ingestion (D-14, SC-4). 9/10 adapter tests pass.
 
-- **Status:** Executing Phase 02 (Plans 1-5 of 7 COMPLETE, advancing to Plan 6)
-- **Progress:** [████████░░] 77%
+- **Plan:** 02-06 COMPLETE — ingestion-service FastAPI + RQ worker (D-04/D-06):
+  POST /ingest/{site_id} (RS256/MFA + fail-closed tenancy + deny-by-default RBAC →
+  blob store upload → RQ enqueue with JSONSerializer → 202 + job_id + same-txn
+  "ingest:enqueued" audit). Worker: blob.get → adapter.ingest → FhirRepository.save
+  + Provenance → worker-owned "ingest:completed" audit commit (D-06). Dockerfile with
+  tesseract-ocr in builder + runtime (Pitfall 8). Commits: 29dea28/bfe9319/dbed612/34aeda5.
+
+- **Status:** Executing Phase 02 (Plans 1-6 of 7 COMPLETE, advancing to Plan 7)
+- **Progress:** [█████████░] 85%
 
 ## Performance Metrics
 
 - Phases complete: 1/8
-- Plans complete: 12/13 (6 phase 01 + 5 phase 02 + plans 03/04/05 added)
+- Plans complete: 13/14 (6 phase 01 + 6 phase 02 + plan 02-07 remaining)
 - Requirements mapped: 16/16 (100%)
 - Orphaned requirements: 0
 
@@ -76,6 +83,7 @@ Plan: 6 of 7
 | 02 | 01 | ~25min | 3 | 22 |
 | 02 | 02 | ~15min | 2 | 4 |
 | 02 | 05 | ~45min | 2 | 9 |
+| 02 | 06 | ~12min | 2 | 14 |
 
 ## Accumulated Context
 
@@ -209,15 +217,16 @@ Plan: 6 of 7
 
 ## Session Continuity
 
-- **Last action:** Completed 02-05-PLAN.md — EMR ingestion adapters (D-11): NativeFhirAdapter,
-  HL7v2Adapter + hl7v2_fhir explicit mapping layer (D-12), PdfExcelAdapter (pypdf/openpyxl),
-  OcrAdapter (DocumentReference + ALCOA flags + blob retention), RuleBasedExtractor (D-09).
-  All four adapters registered in SourceProfileRegistry. PII pseudonymized at ingestion (D-14, SC-4).
-  Commits: 16920fb (RED), bbd7bb0 (Task 1 GREEN), e452182 (Task 2 GREEN).
-  SUMMARY at .planning/phases/02-fhir-r4-model-emr-ingestion/02-05-SUMMARY.md.
+- **Last action:** Completed 02-06-PLAN.md — ingestion-service FastAPI + RQ worker end-to-end
+  (D-04/D-06): POST /ingest/{site_id} (RS256/MFA + fail-closed tenancy + deny-by-default RBAC
+  → blob upload → RQ enqueue JSONSerializer → 202 + same-txn "ingest:enqueued" audit). Worker:
+  blob.get → adapter.ingest → FhirRepository.save + Provenance → worker-owned "ingest:completed"
+  audit (D-06). Dockerfile with tesseract-ocr (Pitfall 8 closed). TDD RED→GREEN for both tasks.
+  Commits: 29dea28 (RED-1), bfe9319 (GREEN-1), dbed612 (RED-2), 34aeda5 (GREEN-2).
+  SUMMARY at .planning/phases/02-fhir-r4-model-emr-ingestion/02-06-SUMMARY.md.
 
-- **Next action:** Plan 02-06 — ingestion-service FastAPI + RQ worker (POST /ingest/{site_id}
-  enqueues jobs; rq worker calls adapter + saves to MongoDB + writes provenance + appends audit).
+- **Next action:** Plan 02-07 — Phase 02 wrap-up: Helm ingestion-service.yaml Deployment,
+  CI smoke test, integration validation, Phase 02 close.
 
-- **Stopped at:** 02-05 COMPLETE — advancing to 02-06
-- **Resume file:** .planning/phases/02-fhir-r4-model-emr-ingestion/02-06-PLAN.md
+- **Stopped at:** 02-06 COMPLETE — advancing to 02-07
+- **Resume file:** .planning/phases/02-fhir-r4-model-emr-ingestion/02-07-PLAN.md

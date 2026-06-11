@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 context gathered
-last_updated: "2026-06-11T10:57:17.248Z"
+stopped_at: "02-01 Task 1 checkpoint — awaiting human package legitimacy review (T-02-SC)"
+last_updated: "2026-06-11T10:59:39Z"
 progress:
   total_phases: 8
   completed_phases: 1
@@ -152,31 +152,13 @@ Plan: 1 of 7
 
 ## Session Continuity
 
-- **Last action:** Executed plan 01-05 (reference service wired end-to-end — D-07 walking
-  skeleton). Task 1 (TDD RED→GREEN): config.py (pydantic-settings DB/Redis/Keycloak/KMS),
-  db.py (SQLAlchemy 2.x engine + per-request session, handler-owned commit), models.py Subject
-  (tenant_id, pseudonym_token, pii_ciphertext bytea), migrations/0001_subject.py + migrate.py
-  (applies audit_log 0001 then subject), api/subjects.py (POST/PUT derive pseudonym +
-  envelope-encrypt PII + insert/update from current_tenant() + append_audit in the SAME txn +
-  commit once; Pydantic v2 extra=forbid; deny-by-default require_write_role), main.py
-  create_app (async authn dependency: verify_token RS256+MFA + fail-closed tenancy bind;
-  AuthError/ForbiddenError/TenancyError→401/403; open /healthz). Task 2 (TDD RED→GREEN):
-  auth_audit.py (login-success/login-failure auditing wired into the authn dependency, each
-  committed append-only) + create audit `after` carries base64 ciphertext; test_rbac (permitted
-  2xx / cross-role 403 / cross-tenant denied / missing-MFA 401), test_login_audit (success+failure
-  both audited), test_field_encryption (raw column ciphertext≠plaintext; decrypt round-trips),
-  test_erasure_audit_immutability (erase A → verify_chain still True, A undecryptable, B intact);
-  deploy/keycloak/test-users.json (6 users, 4 roles, 2 tenants, MFA). Task 3: non-root,
-  secret-free multi-stage Dockerfile (uvicorn reference_service.main:app). 14 ref-service tests
-  green vs local least-privilege Postgres; full repo 80 passed; clean-clone 59 passed/21 skipped;
-  ruff clean. Commits b248bce, e3341d0, 95722a7, 7b1a5cc, 4f4cbec, e5bae2f. httpx recorded
-  APPROVED before install (Encode, FastAPI test transport); fastapi/uvicorn/pydantic-settings
-  installed (all APPROVED); no OIDC-glue package adopted. PLAT-01/02/03 proven end-to-end.
+- **Last action:** Executed plan 02-01 Task 1 (package-legitimacy gate). Appended Phase 02
+  section to docs/validation/PACKAGE-LEGITIMACY.md with 9 rows (fhir.resources, pymongo, rq,
+  hl7apy, pytesseract, Pillow, boto3, openpyxl, pypdf) — Verdict cells left BLANK for human
+  review per T-02-SC / DEC-supply-chain-gate. Commit 56679f2. No uv add has run.
 
-- **Next action:** Execute plan 01-06 (CI + kind deploy): build/load the reference-service
-  Dockerfile, import veridoc-realm.json + test-users.json into a live Keycloak, run the DB- and
-  Keycloak-backed tests in CI (Alembic env.py for both migrations), inject the client secret +
-  KMS master key from K8s Secrets.
+- **Next action:** After human fills in all 9 verdicts and types "approved", resume 02-01 at
+  Task 2 (register veridoc-fhir + veridoc-ingestion libs + uv sync) then Task 3 (fixtures + conftests).
 
-- **Stopped at:** Phase 2 context gathered
-- **Resume file:** .planning/phases/02-fhir-r4-model-emr-ingestion/02-CONTEXT.md
+- **Stopped at:** 02-01 Task 1 checkpoint — awaiting human package-legitimacy review (T-02-SC gate). Human must fill in Verified version + Verdict for all 9 rows in docs/validation/PACKAGE-LEGITIMACY.md § Phase 02, then type "approved".
+- **Resume file:** .planning/phases/02-fhir-r4-model-emr-ingestion/02-01-PLAN.md (resume at Task 2 after "approved" signal)

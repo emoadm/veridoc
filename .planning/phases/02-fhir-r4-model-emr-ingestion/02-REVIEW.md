@@ -59,7 +59,16 @@ findings:
   warning: 8
   info: 4
   total: 18
-status: issues_found
+status: resolved
+resolution:
+  resolved_at: 2026-06-12
+  fixed: [CR-01, CR-02, CR-03, CR-04, CR-05, CR-06, WR-01, WR-02, WR-03, WR-04, WR-05, WR-06, WR-07, WR-08, IN-01, IN-03]
+  deferred:
+    - id: IN-02
+      reason: "find_by_patient pagination is a performance concern the reviewer explicitly logged out of v1 scope; no correctness impact."
+    - id: IN-04
+      reason: "Reviewer marked 'None required'; blob key scheme is already PHI-free (UUID-based). No code change needed."
+  test_result: "87 passed, 20 skipped (Docker/tesseract-gated only); no AttributeError/KeyError/RuntimeError."
 ---
 
 # Phase 2: Code Review Report
@@ -67,7 +76,7 @@ status: issues_found
 **Reviewed:** 2026-06-11
 **Depth:** standard
 **Files Reviewed:** 45
-**Status:** issues_found
+**Status:** resolved (fixed 2026-06-12 — see 02-REVIEW-FIX.md)
 
 ## Summary
 
@@ -97,7 +106,7 @@ all six are ship-blocking.
 
 ## Critical Issues
 
-### CR-01: `/ingest` handler crashes with RuntimeError on any non-empty request body
+### [RESOLVED] CR-01: `/ingest` handler crashes with RuntimeError on any non-empty request body
 
 **File:** `services/ingestion-service/src/ingestion_service/api/ingest.py:112-116`
 **Issue:** The handler is a **sync** `def` (runs in an AnyIO worker thread). It tries to
@@ -127,7 +136,7 @@ async def post_ingest(site_id: str, request: Request,
 (If the session/append_audit calls must stay synchronous, run them via
 `fastapi.concurrency.run_in_threadpool`, but the body read must be awaited.)
 
-### CR-02: `FhirRepository.save()` raises KeyError on resources without an `id` (every Provenance)
+### [RESOLVED] CR-02: `FhirRepository.save()` raises KeyError on resources without an `id` (every Provenance)
 
 **File:** `libs/veridoc-fhir/src/veridoc_fhir/repository.py:110-121`
 **Issue:** `save()` does `doc = resource.model_dump()` then indexes `doc["id"]` in the
@@ -151,7 +160,7 @@ return str(result.upserted_id or res_id)
 ```
 Better: have `create_provenance` assign a UUID `id` so Provenance is addressable.
 
-### CR-03: Worker uses nonexistent `resource.resource_type` → AttributeError on every job
+### [RESOLVED] CR-03: Worker uses nonexistent `resource.resource_type` → AttributeError on every job
 
 **File:** `libs/veridoc-ingestion/src/veridoc_ingestion/worker.py:158-159`
 **Issue:** `if resource.resource_type == "Patient"` and `resource.id`. `fhir.resources`
@@ -166,7 +175,7 @@ if resource.get_resource_type() == "Patient" and patient_id is None:
     patient_id = resource.id or rid
 ```
 
-### CR-04: API hardcodes `modality="native-fhir"` — HL7/PDF/OCR sites routed to the wrong adapter
+### [RESOLVED] CR-04: API hardcodes `modality="native-fhir"` — HL7/PDF/OCR sites routed to the wrong adapter
 
 **File:** `services/ingestion-service/src/ingestion_service/api/ingest.py:147`
 **Issue:** The enqueue call always passes `modality="native-fhir"` with a comment claiming
@@ -182,7 +191,7 @@ multi-modality design (D-11/D-12, SC-2a/SC-2b/SC-3).
 at startup / from config) in the handler and pass it, or have the worker look up the
 profile by `site_id` instead of trusting the passed `modality`.
 
-### CR-05: Inconsistent pseudonym key-namespace breaks cross-source matching AND per-patient crypto-shredding
+### [RESOLVED] CR-05: Inconsistent pseudonym key-namespace breaks cross-source matching AND per-patient crypto-shredding
 
 **File:** `libs/veridoc-ingestion/src/veridoc_ingestion/adapters/native_fhir.py:96`,
 `adapters/hl7v2.py:112`, `adapters/pdf_excel.py:159`, `adapters/ocr.py:179`
@@ -207,7 +216,7 @@ Two distinct defects result:
 `patient_id = f"{site_id}-{stable_natural_id}"` with `natural_id` the cleaned MRN/UUID),
 and document the canonical derivation in one place so all four adapters call it identically.
 
-### CR-06: HL7 `Patient.meta.source` hardcoded to a placeholder `site` — loses site provenance
+### [RESOLVED] CR-06: HL7 `Patient.meta.source` hardcoded to a placeholder `site` — loses site provenance
 
 **File:** `libs/veridoc-ingestion/src/veridoc_ingestion/mapping/hl7v2_fhir.py:120-122`
 **Issue:** `map_adt_a01_to_fhir` sets `"meta": {"source": "urn:veridoc:source:hl7v2:site"}`
@@ -223,7 +232,7 @@ already use.
 
 ## Warnings
 
-### WR-01: NativeFhirAdapter silently drops any resource that fails R4B validation
+### [RESOLVED] WR-01: NativeFhirAdapter silently drops any resource that fails R4B validation
 
 **File:** `libs/veridoc-ingestion/src/veridoc_ingestion/adapters/native_fhir.py:186-191`
 **Issue:** The `except Exception: continue` swallows *all* validation errors for non-Patient
@@ -235,7 +244,7 @@ and nobody would know. The same pattern appears in `pdf_excel.py:194-196`.
 "dropped_resource" counter; consider failing the batch or routing the bundle to a
 dead-letter path so loss is visible.
 
-### WR-02: Worker's `asyncio.run` creates a fresh AsyncMongoClient per job and per call
+### [RESOLVED] WR-02: Worker's `asyncio.run` creates a fresh AsyncMongoClient per job and per call
 
 **File:** `libs/veridoc-ingestion/src/veridoc_ingestion/worker.py:148-178`
 **Issue:** Each job builds a new `FhirRepository` (new `AsyncMongoClient`) and calls
@@ -247,7 +256,7 @@ leaks the client because there is no `try/finally`).
 **Fix:** Wrap repo usage in `try/finally: repo.close()`, and move index creation to worker
 startup rather than per-job.
 
-### WR-03: `_async_ingest` swallows unknown modality and falls back to native FHIR
+### [RESOLVED] WR-03: `_async_ingest` swallows unknown modality and falls back to native FHIR
 
 **File:** `libs/veridoc-ingestion/src/veridoc_ingestion/worker.py:134-137`
 **Issue:** `except ValueError: mod = SourceModality.NATIVE_FHIR` turns an
@@ -257,7 +266,7 @@ closed: an unknown modality should raise and dead-letter the job, not default-ro
 **Fix:** Remove the fallback; let the `ValueError` propagate (RQ will mark the job failed)
 or raise a clear domain error.
 
-### WR-04: HL7 message-type detection can misroute via substring match
+### [RESOLVED] WR-04: HL7 message-type detection can misroute via substring match
 
 **File:** `libs/veridoc-ingestion/src/veridoc_ingestion/adapters/hl7v2.py:115-118`
 **Issue:** Dispatch uses `"ADT^A01" in msg_type` / `"ORU^R01" in msg_type` as a fallback.
@@ -267,7 +276,7 @@ types and is order-sensitive (ADT checked first). Structured field access is ava
 **Fix:** Decide solely on the parsed `(msg_code, trigger)` tuple
 (`msg_1`,`msg_2`) and the structure (`msg_3`); drop the substring fallback.
 
-### WR-05: HL7 datetime parser truncates by a fragile format-length heuristic
+### [RESOLVED] WR-05: HL7 datetime parser truncates by a fragile format-length heuristic
 
 **File:** `libs/veridoc-ingestion/src/veridoc_ingestion/mapping/hl7v2_fhir.py:66-73`
 **Issue:** `value[:len(fmt.replace("%", "XX"))]` computes the slice length by string
@@ -280,7 +289,7 @@ which can shift admission timestamps by hours (ALCOA "Contemporaneous").
 **Fix:** Parse with explicit known lengths (`value[:14]`, `value[:12]`, `value[:8]`) and
 honor any `+/-ZZZZ` offset present in the DTM rather than forcing UTC.
 
-### WR-06: `_extract_natural_id` returns the literal `"UNKNOWN"` token, collapsing distinct patients
+### [RESOLVED] WR-06: `_extract_natural_id` returns the literal `"UNKNOWN"` token, collapsing distinct patients
 
 **File:** `libs/veridoc-ingestion/src/veridoc_ingestion/adapters/hl7v2.py:48-57`
 **Issue:** When PID is missing or PID.3 is empty, the function returns `"UNKNOWN"`. That
@@ -291,7 +300,7 @@ data-integrity hazard, not a cosmetic default.
 **Fix:** Treat a missing/empty PID.3 as a hard error (raise `ValueError`) so the message is
 dead-lettered for manual handling rather than merged under a shared sentinel identity.
 
-### WR-07: Provenance/`meta.source` not set on Encounter/Observation/DiagnosticReport in HL7 mapping
+### [RESOLVED] WR-07: Provenance/`meta.source` not set on Encounter/Observation/DiagnosticReport in HL7 mapping
 
 **File:** `libs/veridoc-ingestion/src/veridoc_ingestion/mapping/hl7v2_fhir.py:145-156, 232-272`
 **Issue:** Only Patient gets a `meta.source` (and that one is the CR-06 placeholder). The
@@ -302,7 +311,7 @@ its origin.
 **Fix:** Set `meta.source = f"urn:veridoc:source:hl7v2:{site_id}"` on every resource the
 mapping emits.
 
-### WR-08: Single-field `id` index is non-unique and overlaps the unique compound index
+### [RESOLVED] WR-08: Single-field `id` index is non-unique and overlaps the unique compound index
 
 **File:** `libs/veridoc-fhir/src/veridoc_fhir/repository.py:80-93`
 **Issue:** `create_indexes` builds a unique `(resourceType, id)` index plus a separate
@@ -318,7 +327,7 @@ remove the redundant `id` index; document the chosen contract.
 
 ## Info
 
-### IN-01: `extensions.py`/`__init__` export `ALCOA_LEGIBILITY_FLAG_URL` but provenance/repository ignore it
+### [RESOLVED] IN-01: `extensions.py`/`__init__` export `ALCOA_LEGIBILITY_FLAG_URL` but provenance/repository ignore it
 
 **File:** `libs/veridoc-fhir/src/veridoc_fhir/extensions.py:38-39`
 **Issue:** The constant is exported and only used by the OCR adapter. Fine for now, but the
@@ -328,7 +337,7 @@ constant has a single consumer.
 **Fix:** None required; consider a unit test asserting both flag instances coexist in the
 serialized DocumentReference.
 
-### IN-02: `find_by_patient(length=None)` loads the full result set into memory
+### [DEFERRED] IN-02: `find_by_patient(length=None)` loads the full result set into memory
 
 **File:** `libs/veridoc-fhir/src/veridoc_fhir/repository.py:143-147`
 **Issue:** `cursor.to_list(length=None)` materializes every matching document. For a patient
@@ -336,7 +345,7 @@ with a large observation history this is unbounded memory. (Performance is out o
 logged as info only.)
 **Fix:** Accept an optional limit / expose pagination when callers need it.
 
-### IN-03: `RuleBasedExtractor` regex can mis-key analytes via substring containment
+### [RESOLVED] IN-03: `RuleBasedExtractor` regex can mis-key analytes via substring containment
 
 **File:** `libs/veridoc-ingestion/src/veridoc_ingestion/extraction.py:120-123`
 **Issue:** `if keyword in name_raw` matches substrings, so a future analyte name containing
@@ -345,7 +354,7 @@ the current 11-entry table there is no collision, but the containment check is a
 correctness trap as the table grows.
 **Fix:** Prefer exact/word-boundary matching against the cleaned analyte name.
 
-### IN-04: `ingest:enqueued` and worker `ingest:completed` audit `after` payloads embed `payload_key`
+### [NO ACTION] IN-04: `ingest:enqueued` and worker `ingest:completed` audit `after` payloads embed `payload_key`
 
 **File:** `services/ingestion-service/src/ingestion_service/api/ingest.py:173-177`,
 `libs/veridoc-ingestion/src/veridoc_ingestion/worker.py:281-287`

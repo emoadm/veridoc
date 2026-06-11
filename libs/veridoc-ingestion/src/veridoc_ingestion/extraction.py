@@ -115,10 +115,13 @@ class RuleBasedExtractor(EntityExtractor):
             unit_raw = match.group("unit") or ""
             status_raw = match.group("status") or ""
 
-            # Look up LOINC entry for this analyte name
+            # Look up LOINC entry for this analyte name.
+            # IN-03: use word-boundary matching rather than bare substring
+            # containment so a future analyte whose name embeds another keyword
+            # (e.g. "Sodium-adjusted X") cannot be mis-keyed to the wrong LOINC.
             loinc_entry = None
             for keyword, entry in _LAB_LOINC_MAP.items():
-                if keyword in name_raw:
+                if re.search(rf"\b{re.escape(keyword)}\b", name_raw):
                     loinc_entry = entry
                     break
 

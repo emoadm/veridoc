@@ -16,7 +16,6 @@
   "quickLoginCheckMilliSeconds": 1000,
   "maxDeltaTimeSeconds": 43200,
   "failureFactor": 5,
-
   "ssoSessionIdleTimeout": 1800,
   "ssoSessionMaxLifespan": 36000,
   "ssoSessionIdleTimeoutRememberMe": 0,
@@ -25,12 +24,9 @@
   "accessTokenLifespan": 300,
   "accessTokenLifespanForImplicitFlow": 900,
   "actionTokenGeneratedByUserLifespan": 300,
-
   "attributes": {
     "acr.loa.map": "{\"mfa\":2,\"otp\":2,\"password\":1}"
   },
-
-  "_comment_roles": "PLAT-03 / D-02 — the 8 named roles with distinct intended access levels. Permission semantics are documented in docs/validation/RBAC-MATRIX.md and enforced by veridoc-auth require_role(). Treated as code under change control (DEC-gamp5-csv).",
   "roles": {
     "realm": [
       {
@@ -38,61 +34,91 @@
         "description": "Clinical Research Associate — performs source data verification, reviews discrepancies and agent findings, opens/closes queries for assigned sites.",
         "composite": false,
         "clientRole": false,
-        "attributes": { "access_level": ["site-operational"] }
+        "attributes": {
+          "access_level": [
+            "site-operational"
+          ]
+        }
       },
       {
         "name": "data-manager",
         "description": "Data Manager — manages eCRF data quality, query lifecycle and data cleaning across studies; broader study-level data access than a CRA.",
         "composite": false,
         "clientRole": false,
-        "attributes": { "access_level": ["study-data"] }
+        "attributes": {
+          "access_level": [
+            "study-data"
+          ]
+        }
       },
       {
         "name": "medical-monitor",
         "description": "Medical Monitor — clinical oversight; receives all SAE escalations, reviews medical-significance findings and causality assessments.",
         "composite": false,
         "clientRole": false,
-        "attributes": { "access_level": ["study-clinical"] }
+        "attributes": {
+          "access_level": [
+            "study-clinical"
+          ]
+        }
       },
       {
         "name": "site-coordinator",
         "description": "Site Coordinator — site-level study conduct and source-document custody; responds to queries for their own site only.",
         "composite": false,
         "clientRole": false,
-        "attributes": { "access_level": ["site-operational"] }
+        "attributes": {
+          "access_level": [
+            "site-operational"
+          ]
+        }
       },
       {
         "name": "principal-investigator",
         "description": "Principal Investigator — site clinical authority; reviews and signs off site findings, approves query resolutions for their site.",
         "composite": false,
         "clientRole": false,
-        "attributes": { "access_level": ["site-clinical"] }
+        "attributes": {
+          "access_level": [
+            "site-clinical"
+          ]
+        }
       },
       {
         "name": "sponsor-rep",
         "description": "Sponsor Representative — read-only cross-site/study dashboards and reports; no write access to source data or queries.",
         "composite": false,
         "clientRole": false,
-        "attributes": { "access_level": ["read-only-aggregate"] }
+        "attributes": {
+          "access_level": [
+            "read-only-aggregate"
+          ]
+        }
       },
       {
         "name": "regulatory-affairs",
         "description": "Regulatory Affairs — audit-trail review (Annex 11), regulatory report access, compliance oversight; read access to the immutable audit log.",
         "composite": false,
         "clientRole": false,
-        "attributes": { "access_level": ["audit-compliance"] }
+        "attributes": {
+          "access_level": [
+            "audit-compliance"
+          ]
+        }
       },
       {
         "name": "system-admin",
         "description": "System Administrator — platform configuration, identity/realm administration, tenant provisioning; no clinical-decision authority (human-in-the-loop preserved).",
         "composite": false,
         "clientRole": false,
-        "attributes": { "access_level": ["platform-admin"] }
+        "attributes": {
+          "access_level": [
+            "platform-admin"
+          ]
+        }
       }
     ]
   },
-
-  "_comment_clients": "OIDC confidential client for the FastAPI reference service (D-07). The oidc-audience-mapper stamps aud=reference-service so veridoc-auth's audience check passes. Realm/roles + tenant claims (site/study) flow via the protocol mappers below. The client secret is a placeholder ${REFERENCE_SERVICE_CLIENT_SECRET} resolved from a K8s Secret at deploy time (plan 01-06) — never a real secret in git (T-04-06).",
   "clients": [
     {
       "clientId": "reference-service",
@@ -107,8 +133,12 @@
       "serviceAccountsEnabled": false,
       "clientAuthenticatorType": "client-secret",
       "secret": "${REFERENCE_SERVICE_CLIENT_SECRET}",
-      "redirectUris": ["https://reference-service.veridoc.local/*"],
-      "webOrigins": ["https://reference-service.veridoc.local"],
+      "redirectUris": [
+        "https://reference-service.veridoc.local/*"
+      ],
+      "webOrigins": [
+        "https://reference-service.veridoc.local"
+      ],
       "attributes": {
         "access.token.signed.response.alg": "RS256",
         "pkce.code.challenge.method": "S256"
@@ -170,8 +200,6 @@
       ]
     }
   ],
-
-  "_comment_authflow": "Browser-mfa flow makes OTP a REQUIRED step so every issued token reflects that MFA was performed. Combined with acr.loa.map above, tokens carry acr=mfa (and amr contains otp). veridoc-auth additionally asserts the acr/amr MFA claim in the API tier (T-04-02) — defence in depth, not Keycloak policy alone.",
   "authenticationFlows": [
     {
       "alias": "browser-mfa",
@@ -205,13 +233,9 @@
     }
   ],
   "browserFlow": "browser-mfa",
-
-  "_comment_otp": "OTP policy: TOTP, SHA1, 6 digits, 30s window — standard authenticator-app MFA.",
   "otpPolicyType": "totp",
   "otpPolicyAlgorithm": "HmacSHA1",
   "otpPolicyDigits": 6,
   "otpPolicyPeriod": 30,
-  "otpPolicyLookAheadWindow": 1,
-
-  "_comment_users": "Seeded users + per-user site/study attributes are provided by plan 01-05's test fixture (one user per role, with MFA enrolled), NOT in this committed realm. This keeps the realm-as-code free of credentials (T-04-06)."
+  "otpPolicyLookAheadWindow": 1
 }

@@ -8,8 +8,10 @@ makes the token irrecomputable — no separate global pseudonym key, no re-ident
 
 Public API:
     pseudonym_token(patient_id, natural_id) -> str   # deterministic HMAC-SHA256 hex digest
+    patient_key_namespace(site_id, natural_id) -> str  # canonical per-patient namespace (CR-05)
+    patient_pseudonym(site_id, natural_id) -> str    # canonical (site, natural_id) -> token
 """
 
-from .pseudonym import pseudonym_token
+from .pseudonym import patient_key_namespace, patient_pseudonym, pseudonym_token
 
-__all__ = ["pseudonym_token"]
+__all__ = ["pseudonym_token", "patient_key_namespace", "patient_pseudonym"]

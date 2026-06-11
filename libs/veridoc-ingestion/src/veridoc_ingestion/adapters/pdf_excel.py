@@ -146,7 +146,7 @@ class PdfExcelAdapter(SourceAdapter):
         """
         from fhir.resources.R4B.observation import Observation
         from fhir.resources.R4B.patient import Patient
-        from veridoc_pseudonym import pseudonym_token
+        from veridoc_pseudonym import patient_pseudonym
 
         # Auto-detect format and extract text
         if _is_xlsx(payload):
@@ -154,9 +154,10 @@ class PdfExcelAdapter(SourceAdapter):
         else:
             text = _extract_pdf_text(payload)
 
-        # Extract MRN from text for pseudonymization
+        # Extract MRN from text for pseudonymization. Use the SINGLE canonical
+        # per-patient key-namespace shared by all adapters (CR-05): site_id+natural_id.
         natural_id = _extract_mrn_from_text(text) or str(uuid.uuid4())
-        patient_id = pseudonym_token(profile.site_id, natural_id)
+        patient_id = patient_pseudonym(profile.site_id, natural_id)
 
         # Run rule-based extraction → list of FHIR resource dicts
         entity_dicts = self._extractor.extract(text)

@@ -22,7 +22,7 @@ import hmac
 
 from veridoc_crypto import get_patient_key
 
-__all__ = ["pseudonym_token"]
+__all__ = ["pseudonym_token", "patient_key_namespace", "patient_pseudonym"]
 
 
 def pseudonym_token(patient_id: str, natural_id: str) -> str:
@@ -33,3 +33,34 @@ def pseudonym_token(patient_id: str, natural_id: str) -> str:
     """
     patient_key = get_patient_key(patient_id)  # shared hierarchy; raises if erased
     return hmac.new(patient_key, natural_id.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+def patient_key_namespace(site_id: str, natural_id: str) -> str:
+    """Return the canonical per-patient key-namespace string (CR-05).
+
+    The first argument to :func:`pseudonym_token` selects the *per-patient* crypto
+    key (``get_patient_key``). For per-patient crypto-shredding (D-14) and
+    cross-source matching (SC-4) to both hold, every adapter MUST derive that
+    namespace identically as ``f"{site_id}-{natural_id}"`` — never just the
+    ``site_id`` (which would share one key across all patients at the site and
+    defeat per-patient erasure) and never an adapter-specific scheme (which would
+    break cross-source linkage of the same physical patient).
+
+    This is the single canonical definition; all four adapters call it so the
+    derivation can never drift between modalities.
+    """
+    return f"{site_id}-{natural_id}"
+
+
+def patient_pseudonym(site_id: str, natural_id: str) -> str:
+    """Return the canonical patient pseudonym token for a ``(site_id, natural_id)`` pair.
+
+    Convenience wrapper that applies the canonical per-patient key-namespace
+    (:func:`patient_key_namespace`) and then :func:`pseudonym_token`. Using this
+    one entry point in every adapter guarantees that the same physical patient —
+    arriving via native-FHIR, HL7v2, PDF/Excel, or OCR — produces the SAME token
+    (SC-4), while distinct patients at the same site get distinct, independently
+    erasable keys (D-14).
+    """
+    namespace = patient_key_namespace(site_id, natural_id)
+    return pseudonym_token(namespace, natural_id)

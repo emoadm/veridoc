@@ -76,24 +76,27 @@ def _resource_class(resource_type: str):  # type: ignore[return]
     return _MAP.get(resource_type)
 
 
-def _pseudonymize_patient(patient_dict: dict, patient_id: str, natural_id: str) -> dict:
+def _pseudonymize_patient(patient_dict: dict, site_id: str, natural_id: str) -> dict:
     """Replace PII fields in a Patient dict with pseudonymized values.
 
-    The pseudonym is deterministic: same (patient_id, natural_id) → same token
-    across all adapters (SC-4, D-14). Name is replaced with "PSEUDONYMIZED";
-    birthDate is cleared; identifiers replaced with the pseudo token.
+    The pseudonym is deterministic and uses the SINGLE canonical key-namespace
+    (``patient_pseudonym(site_id, natural_id)``) shared by every adapter, so the
+    same physical patient maps to the same token across native-FHIR / HL7 / PDF /
+    OCR (SC-4) and per-patient crypto-shredding works (D-14, CR-05). Name is
+    replaced with "PSEUDONYMIZED"; birthDate is cleared; identifiers replaced with
+    the pseudo token.
 
     Args:
         patient_dict: Raw patient resource dict (from bundle JSON).
-        patient_id: Caller-supplied opaque patient identifier (e.g. site+UUID).
-        natural_id: The raw natural identifier used to derive the token (e.g. MRN).
+        site_id: The clinical-site identifier (namespace component).
+        natural_id: The raw natural identifier used to derive the token (e.g. MRN/UUID).
 
     Returns:
         Modified patient_dict with PII replaced.
     """
-    from veridoc_pseudonym import pseudonym_token
+    from veridoc_pseudonym import patient_pseudonym
 
-    token = pseudonym_token(patient_id, natural_id)
+    token = patient_pseudonym(site_id, natural_id)
 
     # Replace Patient.id with the pseudo token
     patient_dict["id"] = token
@@ -162,9 +165,9 @@ class NativeFhirAdapter(SourceAdapter):
                 raw_patient_id = resource.get("id", raw_patient_id)
                 break
 
-        # Derive a site-scoped patient_id for pseudonymization
-        patient_id = f"{profile.site_id}-{raw_patient_id}"
-        natural_id = raw_patient_id  # the Synthea UUID is the natural identifier
+        # natural_id is the Synthea UUID; the canonical per-patient key-namespace
+        # (site_id + natural_id) is applied inside patient_pseudonym (CR-05).
+        natural_id = raw_patient_id
 
         resources: list = []
 
@@ -177,7 +180,7 @@ class NativeFhirAdapter(SourceAdapter):
 
             # Pseudonymize Patient PII before model validation
             if res_type == "Patient":
-                resource = _pseudonymize_patient(resource, patient_id, natural_id)
+                resource = _pseudonymize_patient(resource, profile.site_id, natural_id)
 
             cls = _resource_class(res_type)
             if cls is None:

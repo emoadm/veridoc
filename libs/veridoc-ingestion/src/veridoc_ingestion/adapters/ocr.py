@@ -171,12 +171,13 @@ class OcrAdapter(SourceAdapter):
         Raises:
             Any exception from the OCR engine or blob store propagates to the caller.
         """
-        from veridoc_pseudonym import pseudonym_token
+        from veridoc_pseudonym import patient_pseudonym
 
-        # Derive pseudonymized patient_id
+        # Derive pseudonymized patient_id using the SINGLE canonical per-patient
+        # key-namespace shared by all adapters (CR-05): site_id + natural_id.
         # If profile.config provides a patient_id, use it; otherwise generate one.
         raw_patient_id = profile.config.get("patient_id", str(uuid.uuid4()))
-        patient_id = pseudonym_token(profile.site_id, raw_patient_id)
+        patient_id = patient_pseudonym(profile.site_id, raw_patient_id)
         patient_ref = f"Patient/{patient_id}"
 
         # Content type (default: image/png)

@@ -83,7 +83,7 @@ class HL7v2Adapter(SourceAdapter):
             ValueError: On decode failure, unknown message type, or missing PID.
         """
         from hl7apy.parser import parse_message
-        from veridoc_pseudonym import pseudonym_token
+        from veridoc_pseudonym import patient_pseudonym
 
         try:
             hl7_str = payload.decode("utf-8")
@@ -107,9 +107,10 @@ class HL7v2Adapter(SourceAdapter):
             trigger = msh.msh_9.msg_2.value
             msg_struct = f"{msg_code}_{trigger}"
 
-        # Derive pseudonymized patient_id from PID.3 CX_1
+        # Derive pseudonymized patient_id from PID.3 CX_1 using the SINGLE canonical
+        # per-patient key-namespace shared by all adapters (CR-05): site_id+natural_id.
         natural_id = _extract_natural_id(normalized)
-        patient_id = pseudonym_token(f"{profile.site_id}", natural_id)
+        patient_id = patient_pseudonym(profile.site_id, natural_id)
 
         # Dispatch to the explicit mapping layer (D-12)
         if msg_struct in ("ADT_A01",) or "ADT^A01" in msg_type:

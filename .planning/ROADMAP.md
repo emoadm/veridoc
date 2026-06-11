@@ -17,7 +17,7 @@ deployment, not this build), CON-pilot-partner. See PROJECT.md.
 ## Phases
 
 - [x] **Phase 1: Platform Skeleton & Audit Foundation** - Monorepo, service scaffold, CI/CD, tamper-evident audit trail, and RBAC/identity baseline, all 21 CFR Part 11-ready. (completed 2026-06-11)
-- [ ] **Phase 2: FHIR R4 Model & EMR Ingestion** - Canonical FHIR R4 patient model and ingestion framework (synthetic FHIR, HL7 v2.x, semi-manual import, OCR).
+- [x] **Phase 2: FHIR R4 Model & EMR Ingestion** - Canonical FHIR R4 patient model and ingestion framework (synthetic FHIR, HL7 v2.x, semi-manual import, OCR). (completed 2026-06-11)
 - [ ] **Phase 3: Medidata Rave Mock Integration** - Bidirectional MDRWS integration behind an abstraction layer, exercised against a Rave mock.
 - [ ] **Phase 4: Multi-Agent Framework & Orchestrator** - LangGraph framework, Orchestrator Agent, LLM engine, and human-in-the-loop gating.
 - [ ] **Phase 5: Core Verification Agents** - SDV, ALCOA+, Lab, AE/SAE, ConMed, and Consistency agents producing discrepancies and ALCOA+ assessments.
@@ -63,7 +63,7 @@ model, ready for agents to verify.
 - [x] 02-04-PLAN.md — veridoc-ingestion abstractions: SourceAdapter/registry + OcrEngine + BlobStore + proprietary stub (D-05/D-07/D-08/D-10/D-11)
 - [x] 02-05-PLAN.md — Four adapters + HL7→FHIR mapping + rule-based extraction, pseudonymized at ingestion (D-09/D-11/D-12/D-14)
 - [x] 02-06-PLAN.md — ingestion-service (FastAPI ingest + RQ worker, D-06 worker-owned audit) + Tesseract Dockerfile (D-04/D-06)
-- [ ] 02-07-PLAN.md — Deploy wiring: ingestion-service + RQ-worker Helm Deployments + CI tesseract/testcontainers + kind ingest smoke test
+- [x] 02-07-PLAN.md — Deploy wiring: ingestion-service + RQ-worker Helm Deployments + CI tesseract/testcontainers + kind ingest smoke test
 
 ### Phase 3: Medidata Rave Mock Integration
 **Goal**: The platform can read eCRF data from, and write discrepancies/flags to, a
@@ -145,7 +145,7 @@ trail out — verifiable end-to-end.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Platform Skeleton & Audit Foundation | 6/6 | Complete   | 2026-06-11 |
-| 2. FHIR R4 Model & EMR Ingestion | 4/7 | In Progress|  |
+| 2. FHIR R4 Model & EMR Ingestion | 7/7 | Complete   | 2026-06-11 |
 | 3. Medidata Rave Mock Integration | 0/0 | Not started | - |
 | 4. Multi-Agent Framework & Orchestrator | 0/0 | Not started | - |
 | 5. Core Verification Agents | 0/0 | Not started | - |

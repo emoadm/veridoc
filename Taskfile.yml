@@ -72,6 +72,7 @@ tasks:
     vars:
       CLUSTER: '{{.CLUSTER | default "veridoc"}}'
       IMAGE: '{{.IMAGE | default "veridoc/reference-service:ci"}}'
+      INGESTION_IMAGE: '{{.INGESTION_IMAGE | default "veridoc/ingestion-service:ci"}}'
       NAMESPACE: '{{.NAMESPACE | default "veridoc"}}'
       RELEASE: '{{.RELEASE | default "veridoc"}}'
     cmds:
@@ -80,6 +81,9 @@ tasks:
       # 2. Build + load the reference-service image (Dockerfile from plan 01-05).
       - docker build -t "{{.IMAGE}}" -f services/reference-service/Dockerfile .
       - kind load docker-image "{{.IMAGE}}" --name "{{.CLUSTER}}"
+      # 2b. Build + load the ingestion-service image (Dockerfile from plan 02-06).
+      - docker build -t "{{.INGESTION_IMAGE}}" -f services/ingestion-service/Dockerfile .
+      - kind load docker-image "{{.INGESTION_IMAGE}}" --name "{{.CLUSTER}}"
       - kubectl create namespace "{{.NAMESPACE}}" --dry-run=client -o yaml | kubectl apply -f -
       # 3. Ephemeral secrets (throwaway, cluster-local — NEVER in git, T-06-01).
       - >-
@@ -102,6 +106,17 @@ tasks:
         kubectl -n "{{.NAMESPACE}}" create secret generic veridoc-kms
         --from-literal=VERIDOC_MASTER_KEY="$(openssl rand -hex 32)"
         --dry-run=client -o yaml | kubectl apply -f -
+      # MongoDB + MinIO secrets (ephemeral throwaway — never committed, T-06-01).
+      - >-
+        kubectl -n "{{.NAMESPACE}}" create secret generic veridoc-mongodb
+        --from-literal=MONGO_INITDB_ROOT_USERNAME=veridoc
+        --from-literal=MONGO_INITDB_ROOT_PASSWORD="$(openssl rand -hex 24)"
+        --dry-run=client -o yaml | kubectl apply -f -
+      - >-
+        kubectl -n "{{.NAMESPACE}}" create secret generic veridoc-minio
+        --from-literal=MINIO_ROOT_USER=veridoc
+        --from-literal=MINIO_ROOT_PASSWORD="$(openssl rand -hex 24)"
+        --dry-run=client -o yaml | kubectl apply -f -
       # 4. Realm-as-code ConfigMap from the committed realm JSON (Pitfall 4).
       - >-
         kubectl -n "{{.NAMESPACE}}" create configmap veridoc-keycloak-realm
@@ -113,11 +128,17 @@ tasks:
         --namespace "{{.NAMESPACE}}"
         --set referenceService.image.repository="$(echo {{.IMAGE}} | cut -d: -f1)"
         --set referenceService.image.tag="$(echo {{.IMAGE}} | cut -d: -f2)"
+        --set ingestionService.image.repository="$(echo {{.INGESTION_IMAGE}} | cut -d: -f1)"
+        --set ingestionService.image.tag="$(echo {{.INGESTION_IMAGE}} | cut -d: -f2)"
         --wait --timeout 10m
       # 6. Wait for readiness (the kubectl-wait gate).
       - kubectl -n "{{.NAMESPACE}}" wait --for=condition=available --timeout=300s deployment/veridoc-postgres
       - kubectl -n "{{.NAMESPACE}}" wait --for=condition=available --timeout=420s deployment/veridoc-keycloak
       - kubectl -n "{{.NAMESPACE}}" wait --for=condition=available --timeout=300s deployment/veridoc-reference-service
+      - kubectl -n "{{.NAMESPACE}}" wait --for=condition=available --timeout=300s deployment/veridoc-mongodb
+      - kubectl -n "{{.NAMESPACE}}" wait --for=condition=available --timeout=300s deployment/veridoc-minio
+      - kubectl -n "{{.NAMESPACE}}" wait --for=condition=available --timeout=300s deployment/veridoc-ingestion-service
+      - kubectl -n "{{.NAMESPACE}}" wait --for=condition=available --timeout=300s deployment/veridoc-ingestion-worker
 
   "deploy:kind:down":
     desc: Tear down the ephemeral kind cluster created by deploy:kind.

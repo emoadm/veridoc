@@ -16,7 +16,7 @@ deployment, not this build), CON-pilot-partner. See PROJECT.md.
 
 ## Phases
 
-- [ ] **Phase 1: Platform Skeleton & Audit Foundation** - Monorepo, service scaffold, CI/CD, tamper-evident audit trail, and RBAC/identity baseline, all 21 CFR Part 11-ready.
+- [x] **Phase 1: Platform Skeleton & Audit Foundation** - Monorepo, service scaffold, CI/CD, tamper-evident audit trail, and RBAC/identity baseline, all 21 CFR Part 11-ready. (completed 2026-06-11)
 - [ ] **Phase 2: FHIR R4 Model & EMR Ingestion** - Canonical FHIR R4 patient model and ingestion framework (synthetic FHIR, HL7 v2.x, semi-manual import, OCR).
 - [ ] **Phase 3: Medidata Rave Mock Integration** - Bidirectional MDRWS integration behind an abstraction layer, exercised against a Rave mock.
 - [ ] **Phase 4: Multi-Agent Framework & Orchestrator** - LangGraph framework, Orchestrator Agent, LLM engine, and human-in-the-loop gating.
@@ -44,7 +44,7 @@ tamper-evident, 21 CFR Part 11-ready audit trail, and identity/roles exist for t
 - [x] 01-03-PLAN.md — veridoc-crypto + veridoc-pseudonym: per-patient key hierarchy, envelope encryption, crypto-shred
 - [x] 01-04-PLAN.md — veridoc-auth + veridoc-tenancy: Keycloak realm-as-code, OIDC/MFA/8-role RBAC, fail-closed tenancy
 - [x] 01-05-PLAN.md — Reference service wired end-to-end (D-07 walking skeleton) + Dockerfile + integration tests
-- [ ] 01-06-PLAN.md — Provider-portable Helm + Terraform + GitHub Actions CI deploying to ephemeral kind cluster
+- [x] 01-06-PLAN.md — Provider-portable Helm + Terraform + GitHub Actions CI deploying to ephemeral kind cluster
 
 ### Phase 2: FHIR R4 Model & EMR Ingestion
 **Goal**: Heterogeneous EMR inputs are normalized into one canonical FHIR R4 patient
@@ -137,7 +137,7 @@ trail out — verifiable end-to-end.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Platform Skeleton & Audit Foundation | 5/6 | In Progress|  |
+| 1. Platform Skeleton & Audit Foundation | 6/6 | Complete   | 2026-06-11 |
 | 2. FHIR R4 Model & EMR Ingestion | 0/0 | Not started | - |
 | 3. Medidata Rave Mock Integration | 0/0 | Not started | - |
 | 4. Multi-Agent Framework & Orchestrator | 0/0 | Not started | - |

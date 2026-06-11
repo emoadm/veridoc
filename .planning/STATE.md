@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 01-05-PLAN.md.
+status: phase-complete
+stopped_at: Completed 01-06-PLAN.md — Phase 1 complete (CI deploy + tamper gate green).
 last_updated: "2026-06-11T00:00:00.000Z"
 progress:
   total_phases: 8
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 6
-  completed_plans: 5
-  percent: 83
+  completed_plans: 6
+  percent: 100
 ---
 
 # VeriDoc AI — Project State
@@ -29,18 +29,18 @@ Project memory. Updated as work progresses.
   discrepancy queries + ALCOA+ assessment + complete tamper-evident audit trail out,
   verifiable end-to-end against fixtures.
 
-- **Current focus:** Phase 01 — platform-skeleton-audit-foundation
+- **Current focus:** Phase 02 — fhir-r4-model-emr-ingestion (next to plan)
 
 ## Current Position
 
-Phase: 01 (platform-skeleton-audit-foundation) — EXECUTING
-Plan: 6 of 6 (next)
+Phase: 01 (platform-skeleton-audit-foundation) — COMPLETE
+Plan: 6 of 6 (all complete)
 
-- **Phase:** 1 — Platform Skeleton & Audit Foundation (executing)
-- **Plan:** 01-05 COMPLETE — reference-service wired end-to-end (D-07 walking skeleton): FastAPI POST/PUT /subjects flows HTTP → Keycloak-style JWT authn+MFA (veridoc-auth) → deny-by-default RBAC → fail-closed site/study tenancy (veridoc-tenancy) → deterministic pseudonym (veridoc-pseudonym) + AES-256-GCM envelope-encrypted PII (veridoc-crypto) → SAME-transaction hash-chained audit (veridoc-audit) → Postgres (atomic business+audit). Login attempts (success+failure) audited; GDPR Art.17 erasure × 21 CFR Part 11 immutability seam proven once (erase A → verify_chain still True, A undecryptable, B intact). Non-root secret-free Dockerfile for plan 06. PLAT-01/02/03 satisfied end-to-end. Next is 01-06 (CI + kind deploy).
-- **Status:** Executing Phase 01
-- **Progress:** Phase 0/8 complete; plans 5/6 in phase 01
-  `[████████░░] 83%`
+- **Phase:** 1 — Platform Skeleton & Audit Foundation (COMPLETE)
+- **Plan:** 01-06 COMPLETE — provider-portable deploy path proven for real (PLAT-01): Helm chart (Keycloak realm-import + Postgres + Redis + reference service) + thin Terraform + secrets contract, and a GitHub Actions pipeline that lint→test→builds the image→spins an EPHEMERAL kind cluster→REAL `helm install`→`kubectl wait`→runs the tamper-detection phase gate (`test_mutated_row_breaks_chain`) against the deployed Postgres→tears down. Full pipeline green in GitHub Actions; secrets name-referenced + ephemeral (no git bytes, T-06-01). CI surfaced + fixed 4 latent defects (pnpm-less integration job, psycopg2 URL driver, Keycloak `_comment_*` realm-import crash, deploy diagnostics). Phase 1 COMPLETE — skeleton, audit chain, identity/RBAC, PII protection, and proven deploy path all green.
+- **Status:** Phase 01 complete — ready to plan Phase 02
+- **Progress:** Phase 1/8 complete; plans 6/6 in phase 01
+  `[██████████] 100%`
 
 ## Performance Metrics
 

@@ -77,9 +77,11 @@ Locked, NOT re-decided here (carried from project-level / prior phases):
 - **D-07:** The **Rave `Subject` ID is pseudonymized with the same `veridoc-pseudonym`
   mechanism** (D-12/D-14) used at ingestion — consistent GDPR Art. 9 handling and
   validation-ready, even on synthetic data.
-- **D-08:** EMR↔Rave correlation (linking a FHIR `Patient` to a Rave `Subject`) is done
-  via a **site-level mapping kept OUTSIDE agent code**. Agents receive correlated/typed
-  data; they do not implement the linkage themselves.
+- **D-08 [informational]:** EMR↔Rave correlation (linking a FHIR `Patient` to a Rave
+  `Subject`) is done via a **site-level mapping kept OUTSIDE agent code**. Agents receive
+  correlated/typed data; they do not implement the linkage themselves. *(Scope fence — a
+  deliberate non-implementation for Phase 3; the linkage lives outside agent code and the
+  correlated data is consumed by Phase 5. Not a Phase 3 deliverable, hence [informational].)*
 
 ### Webhook mechanism
 - **D-09:** **Real HTTP receiver**: a `rave-integration` service exposes an HTTP webhook

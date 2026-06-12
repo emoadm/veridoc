@@ -76,7 +76,12 @@ production MDRWS API.
   2. The system WRITEs a discrepancy note, updates query status, sets a per-field SDV flag, and flags a protocol deviation against the mock.
   3. A mock webhook (new data entry / SAE submission / query response) triggers the corresponding pipeline action.
   4. The MDRWS contract is isolated behind an abstraction layer, so swapping mock → production requires no agent-code changes.
-**Plans**: TBD
+**Plans**: 5 plans in 4 waves
+- [ ] 03-01-PLAN.md — Package-legitimacy gate (pydantic-xml/lxml) + veridoc-rave lib scaffold + RavePort ABC/RaveProfile + Rave DTOs (D-01/D-05/D-06)
+- [ ] 03-02-PLAN.md — ODM-XML parse/serialize (boundary pseudonymization, D-07) + MdrwsHttpAdapter READ+WRITE over HTTP Basic auth (D-01)
+- [ ] 03-03-PLAN.md — Stateful Rave mock FastAPI service (D-02/D-03/D-04) + adapter↔mock READ/WRITE round-trip integration tests (SC-1/SC-2)
+- [ ] 03-04-PLAN.md — rave-integration service: HMAC webhook receiver + same-txn audit + rave-events RQ enqueue + stub consumer (D-09/D-10)
+- [ ] 03-05-PLAN.md — Helm deploy (rave-integration + rave-mock) + Taskfile/CI wiring + kind smoke test proving SC-1..SC-4 end-to-end (D-11)
 
 ### Phase 4: Multi-Agent Framework & Orchestrator
 **Goal**: A LangGraph multi-agent runtime exists where stateful agents are coordinated
